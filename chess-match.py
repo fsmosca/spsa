@@ -73,7 +73,7 @@ options  = ' -tournament gauntlet -pgnout results.pgn '
 options += ' -concurrency 3 '
 options += ' -resign movecount=3 score=400 '
 options += ' -draw movenumber=34 movecount=8 score=20 '
-options += ' -each tc=10.0+0.05 option.Hash=128 '
+options += ' -each tc=0/10+0.05 option.Hash=128 '
 options += ' -openings file=2moves_v1.pgn format=pgn order=random plies=4 '
 
 
