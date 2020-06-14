@@ -39,7 +39,6 @@ a match result of (2 + 0.5 + 0) / 6 = 0.417
 
 from subprocess import Popen, PIPE
 import sys
-#import exceptions
 
 
 # The directory where the two engine executables will be found
@@ -91,7 +90,7 @@ def main(argv = None):
     rounds = 0
     try:
         rounds = int(argv[0])
-    except exceptions.ValueError:
+    except ValueError:
         print('Invalid length of match: %s' % argv[0])
         return 2
 
@@ -99,7 +98,7 @@ def main(argv = None):
     seed = 0
     try:
         seed = int(argv[0])
-    except exceptions.ValueError:
+    except ValueError:
         print('Invalid seed value: %s' % argv[0])
         return 2
 
@@ -111,7 +110,7 @@ def main(argv = None):
         # Make sure the parameter value is numeric
         try:
             float(argv[i + 1])
-        except exceptions.ValueError:
+        except ValueError:
             print('Invalid value for parameter %s: %s' % (argv[i], argv[i + 1]))
             return 2
         # Pass SPSA3's parameters to the engine by using
