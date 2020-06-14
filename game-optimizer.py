@@ -12,8 +12,6 @@ see the function set_parameters_from_string() in the example section.
 
 from subprocess import Popen, PIPE
 import random
-import math
-import array
 import sys
 import spsa
 import utils
