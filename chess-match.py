@@ -120,7 +120,7 @@ def main(argv = None):
         initstr = engine_param_cmd.format(name = argv[i], value = argv[i + 1])
         fcp += ' initstr="%s" ' % initstr
 
-    cutechess_args  = ' -repeat -rounds %s ' % rounds
+    cutechess_args  = ' -repeat -games 2 -rounds %s ' % rounds
     cutechess_args += ' -srand %d -engine %s -engine %s %s ' % (seed, fcp, scp, options)
     
     command  = ' cd ' + directory + ' && '
