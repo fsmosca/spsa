@@ -68,6 +68,7 @@ opponents = [ 'cmd=base proto=uci option.Threads=1 name=base' ]
 
 # Additional cutechess-cli options, eg. time control and opening book.
 # This is also were we set options used by both players.
+# Place the opening file in the engine folder or directory above.
 options  = ' -tournament gauntlet -pgnout results.pgn '
 options += ' -concurrency 3 '
 options += ' -resign movecount=3 score=400 '
