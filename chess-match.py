@@ -50,10 +50,11 @@ cutechess_cli_directory = 'D:/Chess/CuteChess-CLI/'
 cutechess_cli_path = cutechess_cli_directory + 'cutechess-cli'
 
 # The engine whose parameters will be optimized
+engine_test_name = 'stockfish'
 engine  = 'cmd=stockfish '
 engine += 'proto=uci '
 engine += 'option.Threads=1 '
-engine += 'name=stockfish '
+engine += f'name={engine_test_name} '
 
 # Format for the commands that are sent to the engine to
 # set the parameter values. When the match is run,
@@ -64,7 +65,8 @@ engine_param_cmd = 'setoption name {name} value {value}'
 # A pool of opponents for the engine. The opponent will be chosen
 # based on the seed sent by SPSA3. In Stockfish development we
 # usually use only one opponent in the pool (the old master branch).
-opponents = [ 'cmd=base proto=uci option.Threads=1 name=base' ]
+engine_base_name = 'base'
+opponents = [ f'cmd=base proto=uci option.Threads=1 name={engine_base_name}' ]
 
 # Additional cutechess-cli options, eg. time control and opening book.
 # This is also were we set options used by both players.
@@ -143,7 +145,7 @@ def main(argv = None):
     # we search for the last line containing a score of the match
     result = ""
     for line in output.splitlines():
-        if line.startswith('Score of stockfish vs base'):
+        if line.startswith(f'Score of {engine_test_name} vs {engine_base_name}'):
             result = line[line.find("[")+1 : line.find("]")]
 
     if result == "":
