@@ -42,11 +42,12 @@ import sys
 
 
 # The directory where the two engine executables will be found
-directory = '/Users/stephane/Programmation/fishtest-for-local-tests/worker/testing/'
+directory = 'D:/Chess/Engines/Stockfish/'
 
 # Path to the cutechess-cli executable.
 # On Windows this should point to cutechess-cli.exe
-cutechess_cli_path = directory + 'cutechess-cli'
+cutechess_cli_directory = 'D:/Chess/CuteChess-CLI/'
+cutechess_cli_path = cutechess_cli_directory + 'cutechess-cli'
 
 # The engine whose parameters will be optimized
 engine  = 'cmd=stockfish '
