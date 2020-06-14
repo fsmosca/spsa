@@ -16,3 +16,6 @@ see the function set_parameters_from_string() in the example section.
 - *match.py* : a script to organize a match between two playing engines in any game (Go, Chess, etc..)
 - *chess-game.py* : organize one game of Chess between two engines. Can be plugged into *match.py*
 - *chess-match.py* : a specialized Chess version of *match.py*, more efficient because it uses parallelism for the match
+
+### Sample run
+[Queen piece value optimization](https://github.com/fsmosca/spsa/wiki/Sample-run)
