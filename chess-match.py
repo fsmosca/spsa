@@ -130,7 +130,7 @@ def main(argv = None):
     # print(command)
 
     # Run cutechess-cli and wait for it to finish
-    process = Popen(command, shell = True, stdout = PIPE)
+    process = Popen(command, shell = True, stdout = PIPE, text=True)
     output = process.communicate()[0]
     if process.returncode != 0:
         print('Could not execute command: %s' % command)
