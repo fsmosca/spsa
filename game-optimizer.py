@@ -29,7 +29,12 @@ class game_optimizer:
         # Store the arguments
         self.ENGINE_COMMAND  = ""   # name of the script used to make a match against the reference engine
         self.THETA_0         = {}   # the initial set of parameter
-        self.MINI_MATCH      = 12   # size of the minimatches used to estimate the gradient
+
+        # Size of the minimatches used to estimate the gradient.
+        # When using cutechess this is the number of rounds.
+        # If repeat is set and games=2 and rounds=12, then
+        # total games to estimate the gradient equals 2x12 or 24.
+        self.MINI_MATCH      = 12
 
 
     def set_engine_command(self, command):
