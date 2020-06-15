@@ -13,6 +13,7 @@ see the function set_parameters_from_string() in the example section.
 from subprocess import Popen, PIPE
 import random
 import sys
+import copy
 import spsa
 import utils
 
@@ -100,7 +101,14 @@ class game_optimizer:
         regularization = utils.regulizer(utils.difference(theta, self.THETA_0), 0.01, 0.5)
 
         # Calculate the score of the minimatch
-        score = self.launch_engine(theta)
+
+        # Change the value of theta or parameters to centipawn as input to engine.
+        # Todo: Read param and factor from config file.
+        factor = 1000
+        param = copy.deepcopy(theta)
+        param.update((x, int(y * factor)) for x, y in param.items())
+
+        score = self.launch_engine(param)
 
         result = -score + regularization
 
@@ -127,10 +135,13 @@ class game_optimizer:
         n = len(list)
 
         # Create the initial vector, and store it in THETA_0
+        # Change centipawn param value to decimal as input to spsa
+        # Todo: Read param and factor from config file.
+        factor = 1000
         self.THETA_0 = {}
         for k in range(0 , n // 2):
             name  = list[ 2*k ]
-            value = float(list[ 2*k + 1])
+            value = float(list[ 2*k + 1]) / factor
             self.THETA_0[name] = value
 
         # The function also prints and returns THETA_0
