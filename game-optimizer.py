@@ -162,10 +162,10 @@ if __name__ == "__main__":
     #optimizer.set_engine_command("python match.py")
 
     # Use this to get the initial parameters from a string
-    parameters = "A 0.32  B 1.28"
+    # parameters = "A 0.32  B 1.28"
 
     # Use this to get the initial parameters from the command line
-    # parameters = ' '.join(sys.argv[1:])
+    parameters = ' '.join(sys.argv[1:])
 
     print("parameters = " + parameters)
     theta0 = optimizer.set_parameters_from_string(parameters)
