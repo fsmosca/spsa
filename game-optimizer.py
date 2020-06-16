@@ -157,6 +157,8 @@ if __name__ == "__main__":
     # Create the optimization object
     optimizer  = game_optimizer()
 
+    iterations = 500
+
     # Set the name of the script to run matches
     optimizer.set_engine_command("python chess-match.py")
     #optimizer.set_engine_command("python match.py")
@@ -171,7 +173,7 @@ if __name__ == "__main__":
     theta0 = optimizer.set_parameters_from_string(parameters)
 
     # Create the SPSA minimizer with 10000 iterations...
-    minimizer  = spsa.SPSA_minimization(optimizer.goal_function, theta0, 10000)
+    minimizer  = spsa.SPSA_minimization(optimizer.goal_function, theta0, iterations)
 
     # Run it!
     minimum = minimizer.run()
