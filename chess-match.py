@@ -39,6 +39,11 @@ a match result of (2 + 0.5 + 0) / 6 = 0.417
 
 from subprocess import Popen, PIPE
 import sys
+import logging
+
+
+logging.basicConfig(format='%(asctime)s : %(message)s', level=logging.INFO,
+                    filename='spsa_log.txt', filemode='a')
 
 
 # The directory where the two engine executables will be found
@@ -127,9 +132,8 @@ def main(argv = None):
     
     command  = ' cd ' + directory + ' && '
     command += ' %s %s ' % (cutechess_cli_path, cutechess_args)
-    
-    # Debug the command
-    # print(command)
+
+    logging.info(f'{__file__} > {command}')
 
     # Run cutechess-cli and wait for it to finish
     process = Popen(command, shell = True, stdout = PIPE, text=True)
@@ -153,6 +157,7 @@ def main(argv = None):
         return 2
     else:
         print(result)
+        logging.info(f'{__file__} > match result: {result}')
 
 if __name__ == "__main__":
     sys.exit(main())
