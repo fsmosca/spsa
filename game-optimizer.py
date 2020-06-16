@@ -38,7 +38,7 @@ class game_optimizer:
         # When using cutechess this is the number of rounds.
         # If repeat is set and games=2 and rounds=12, then
         # total games to estimate the gradient equals 2x12 or 24.
-        self.MINI_MATCH      = 12
+        self.MINI_MATCH      = 2
 
 
     def set_engine_command(self, command):
