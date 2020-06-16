@@ -7,7 +7,12 @@ Author: Stéphane Nicolet
 import random
 import math
 import array
+import logging
 import utils
+
+
+logging.basicConfig(format='%(asctime)s : %(message)s', level=logging.INFO,
+                    filename='spsa_log.txt', filemode='a')
 
 
 class SPSA_minimization:
@@ -97,6 +102,7 @@ class SPSA_minimization:
             c_k = self.c / (k ** self.gamma)
             a_k = self.a / ((k + self.A) ** self.alpha)
 
+            # Run the engine match here to get the gradient
             gradient = self.approximate_gradient(theta, c_k)
 
             #print(str(k) + " gradient = " + utils.pretty(gradient))
@@ -170,6 +176,8 @@ class SPSA_minimization:
         else:
             current_goal = 100000000000000000.0
 
+        logging.info(f'{__file__} > current_goal: {current_goal}')
+
         bernouilli = self.create_bernouilli(theta)
 
         count = 0
@@ -183,27 +191,34 @@ class SPSA_minimization:
             # in games).
             state = random.getstate()
             theta1 = utils.linear_combinaison(1.0, theta, c, bernouilli)
+            logging.info(f'{__file__} > run 1st match with theta1: {theta1}')
             f1 = self.evaluate_goal(theta1)
 
             random.setstate(state)
             theta2 = utils.linear_combinaison(1.0, theta, -c, bernouilli)
+            logging.info(f'{__file__} > run 2nd match with theta2: {theta2}')
             f2 = self.evaluate_goal(theta2)
+
+            logging.info(f'{__file__} > f1: {f1}, f2: {f2}')
 
             if f1 != f2:
                 break
 
             count = count + 1
+            logging.info(f'{__file__} > f1 and f2 are the same, try the engine match again. num_tries = {count}')
+
             if count >= 100:
-                # print("too many evaluation to find a gradient, function seems flat")
+                logging.info(f'{__file__} > too many evaluation to find a gradient, function seems flat')
                 break
 
         # Update the gradient
         gradient = {}
         for (name, value) in theta.items():
             gradient[name] = (f1 - f2) / (2.0 * c * bernouilli[name])
+            logging.info(f'{__file__} > {name} gradient: {gradient[name]}')
 
         if (f1 > current_goal) and (f2 > current_goal):
-            print("function seems not decreasing")
+            logging.info(f'{__file__} > function seems not decreasing')
             gradient = utils.linear_combinaison(0.1, gradient)
 
         # For the correction factor used in the running average for the gradient,
@@ -229,6 +244,8 @@ class SPSA_minimization:
             self.best_eval [self.best_count % 1000] = f2
             self.best_theta[self.best_count % 1000] = theta2
             self.best_count += 1
+
+        logging.info(f'{__file__} > final gradient: {gradient}')
         
         # Return the estimation of the new gradient
         return gradient
