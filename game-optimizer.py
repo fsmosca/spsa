@@ -14,8 +14,13 @@ from subprocess import Popen, PIPE
 import random
 import sys
 import copy
+import logging
 import spsa
 import utils
+
+
+logging.basicConfig(format='%(asctime)s : %(message)s', level=logging.INFO,
+                    filename='spsa_log.txt', filemode='a')
 
 
 class game_optimizer:
@@ -107,6 +112,7 @@ class game_optimizer:
         factor = 1000
         param = copy.deepcopy(theta)
         param.update((x, int(y * factor)) for x, y in param.items())
+        logging.info(f'{__file__} > new param: {param}')
 
         score = self.launch_engine(param)
 
@@ -146,6 +152,7 @@ class game_optimizer:
 
         # The function also prints and returns THETA_0
         print("read_parameters :  THETA_0 = " + utils.pretty(self.THETA_0))
+        logging.info(f'{__file__} > init param: {self.THETA_0}')
         return self.THETA_0
 
 
