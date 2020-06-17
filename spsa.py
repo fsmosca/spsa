@@ -8,6 +8,8 @@ import random
 import math
 import array
 import logging
+import copy
+
 import utils
 
 
@@ -85,6 +87,9 @@ class SPSA_minimization:
         Returns:
             The point (as a dict) which is (hopefully) a minimizer of "f".
         """
+        is_spsa = True
+        is_steep_descent = False
+        is_rprop = False
 
         k = 0
         theta = self.theta0
@@ -97,7 +102,7 @@ class SPSA_minimization:
             if self.constraints is not None:
                theta = self.constraints(theta)
 
-            print("theta  = " + utils.pretty(theta))
+            print(f'theta  = {theta}')
 
             c_k = self.c / (k ** self.gamma)
             a_k = self.a / ((k + self.A) ** self.alpha)
@@ -105,41 +110,51 @@ class SPSA_minimization:
             # Run the engine match here to get the gradient
             gradient = self.approximate_gradient(theta, c_k)
 
-            #print(str(k) + " gradient = " + utils.pretty(gradient))
-            # if k % 1000 == 0:
-                # print(k + utils.pretty(theta) + "norm2(g) = " + str(utils.norm2(gradient)))
-                # print(k + " theta = " + utils.pretty(theta))
+            # For SPSA we update with a small step (theta = theta - a_k * gradient)
+            if is_spsa:
+                theta = utils.linear_combinaison(1.0, theta, -a_k, gradient)
+                logging.info(f'{__file__} > theta from spsa: {theta}')
 
-            ## For SPSA we update with a small step (theta = theta - a_k * gradient)
-            theta = utils.linear_combinaison(1.0, theta, -a_k, gradient)
-            logging.info(f'{__file__} > theta from spsa: {theta}')
+            # For steepest descent we update via a constant small step in the gradient direction
+            elif is_steep_descent:
+                mu = -0.01 / max(1.0, utils.norm2(gradient))
+                theta = utils.linear_combinaison(1.0, theta, mu, gradient)
 
-            ## For steepest descent we update via a constant small step in the gradient direction
-            # mu = -0.01 / max(1.0, utils.norm2(gradient))
-            # theta = utils.linear_combinaison(1.0, theta, mu, gradient)
+            # For RPROP, we update with information about the sign of the gradients
+            elif is_rprop:
+                theta = utils.linear_combinaison(1.0, theta, -0.01, self.rprop(theta, gradient))
 
-            ## For RPROP, we update with information about the sign of the gradients
-            # theta = utils.linear_combinaison(1.0, theta, -0.01, self.rprop(theta, gradient))
+            # Apply parameter limits
+            theta = utils.apply_limits(theta)
+            logging.info(f'{__file__} > theta with limits: {theta}')
 
-            ## We then move to the point which gives the best average of goal
+            # We then move to the point which gives the best average of goal
             (avg_goal , avg_theta) = self.average_best_evals(30)
             logging.info(f'{__file__} > avg_theta from average_best_evals: {avg_theta}')
 
             theta = utils.linear_combinaison(0.98, theta, 0.02, avg_theta)
             logging.info(f'{__file__} > theta with avg_theta: {theta}')
 
+            # Apply parameter limits
+            theta = utils.apply_limits(theta)
+            logging.info(f'{__file__} > theta with avg_theta and limits: {theta}')
+
+            # Log best param values
+            for kv, vv in theta.items():
+                logging.info(f'<best> iter: {k}, param: {kv}, value: {int(vv["value"]*vv["factor"])}')
+
             if (k % 100 == 0) or (k <= 1000) :
                 (avg_goal , avg_theta) = self.average_evaluations(30)
                 print("iter = " + str(k))
                 logging.info(f'{__file__} > iter: {k}')
-                print("mean goal (all)   = " + str(avg_goal))
-                print("mean theta (all)  = " + utils.pretty(avg_theta))
+                print(f'mean goal (all)   = {avg_goal}')
+                print(f'mean theta (all)  = {utils.true_param(avg_theta)}')
 
                 (avg_goal , avg_theta) = self.average_best_evals(30)
                 logging.info(f'{__file__} > mean goal (best): {avg_goal}')
                 logging.info(f'{__file__} > mean theta (best): {avg_theta}')
-                print("mean goal (best)  = " + str(avg_goal))
-                print("mean theta (best) = " + utils.pretty(avg_theta))
+                print(f'mean goal (best)  = {avg_goal}')
+                print(f'mean theta (best) = {utils.true_param(avg_theta)}')
 
             print("-----------------------------------------------------------------")
 
@@ -189,6 +204,7 @@ class SPSA_minimization:
 
         count = 0
         while True:
+            logging.info(f'{__file__} Apply bernouilli term to theta, theta={theta}, c={c}, bernouilli={bernouilli}')
             # Calculate two evaluations of f at points M + c * bernouilli and
             # M - c * bernouilli to estimate the gradient. We do not want to
             # use a null gradient, so we loop until the two functions evaluations
@@ -198,11 +214,23 @@ class SPSA_minimization:
             # in games).
             state = random.getstate()
             theta1 = utils.linear_combinaison(1.0, theta, c, bernouilli)
+            logging.info(f'{__file__} theta1: {theta1}')
+
+            # Apply parameter limits
+            logging.info(f'{__file__} > Apply limits to theta1 before sending to engine')
+            theta1 = utils.apply_limits(theta1)
+            logging.info(f'{__file__} theta1 with limits: {theta1}')
             logging.info(f'{__file__} > run 1st match with theta1: {theta1}')
             f1 = self.evaluate_goal(theta1)
 
             random.setstate(state)
             theta2 = utils.linear_combinaison(1.0, theta, -c, bernouilli)
+            logging.info(f'{__file__} theta2: {theta2}')
+
+            # Apply parameter limits
+            logging.info(f'{__file__} > Apply limits to theta2 before sending to engine')
+            theta2 = utils.apply_limits(theta2)
+            logging.info(f'{__file__} theta2 with limits: {theta2}')
             logging.info(f'{__file__} > run 2nd match with theta2: {theta2}')
             f2 = self.evaluate_goal(theta2)
 
@@ -219,10 +247,10 @@ class SPSA_minimization:
                 break
 
         # Update the gradient
-        gradient = {}
+        gradient = copy.deepcopy(theta)
         for (name, value) in theta.items():
-            gradient[name] = (f1 - f2) / (2.0 * c * bernouilli[name])
-            logging.info(f'{__file__} > {name} gradient: {gradient[name]}')
+            gradient[name]['value'] = (f1 - f2) / (2.0 * c * bernouilli[name]['value'])
+            logging.info(f'{__file__} > {name} gradient: {gradient}')
 
         if (f1 > current_goal) and (f2 > current_goal):
             logging.info(f'{__file__} > function seems not decreasing')
@@ -239,7 +267,6 @@ class SPSA_minimization:
 
         # Store the current gradient for the next time, to calculate the running average
         self.previous_gradient = gradient
-        
         
         # Store the best the two evals f1 and f2 (or both)
         if (f1 <= current_goal):
@@ -263,9 +290,9 @@ class SPSA_minimization:
         Create a random direction to estimate the stochastic gradient.
         We use a Bernouilli distribution : bernouilli = (+1,+1,-1,+1,-1,.....)
         """
-        bernouilli = {}
+        bernouilli = copy.deepcopy(m)
         for (name, value) in m.items():
-            bernouilli[name] = 1 if random.randint(0, 1) else -1
+            bernouilli[name]['value'] = 1 if random.randint(0, 1) else -1
 
 
         g = utils.norm2(self.previous_gradient)
@@ -276,10 +303,10 @@ class SPSA_minimization:
                                                   0.25 * d / g, self.previous_gradient)
         
         for (name, value) in m.items():
-            if bernouilli[name] == 0.0:
-                bernouilli[name] = 0.2
-            if abs(bernouilli[name]) < 0.2:
-                bernouilli[name] = 0.2 * utils.sign_of(bernouilli[name])
+            if bernouilli[name]['value'] == 0.0:
+                bernouilli[name][value] = 0.2
+            if abs(bernouilli[name]['value']) < 0.2:
+                bernouilli[name]['value'] = 0.2 * utils.sign_of(bernouilli[name]['value'])
 
         return bernouilli
 
@@ -367,9 +394,9 @@ class SPSA_minimization:
 
         p = utils.hadamard_product(previous_g, gradient)
 
-        print("gradient = " + utils.pretty(gradient))
-        print("old_g    = " + utils.pretty(previous_g))
-        print("p        = " + utils.pretty(p))
+        print(f'gradient = {gradient}')
+        print(f'old_g = {previous_g}')
+        print(f'p = {p}')
 
         g = {}
         eta = {}
@@ -385,9 +412,9 @@ class SPSA_minimization:
 
             g[name] = gradient[name]
 
-        print("g        = " + utils.pretty(g))
-        print("eta      = " + utils.pretty(eta))
-        print("delta    = " + utils.pretty(delta))
+        print(f'g       = {g}')
+        print(f'eta     = {eta}')
+        print(f'delta   = {delta}')
 
         # store the current g and delta for the next call of the RPROP algorithm
         self.rprop_previous_g     = g
@@ -396,8 +423,8 @@ class SPSA_minimization:
         # calculate the update for the current RPROP
         s = utils.hadamard_product(delta, utils.sign(g))
 
-        print("sign(g)  = " + utils.pretty(utils.sign(g)))
-        print("s        = " + utils.pretty(s))
+        print(f'sign(g)  = {utils.sign(g)}')
+        print(f's        = {s}')
 
         return s
 
