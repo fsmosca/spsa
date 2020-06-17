@@ -12,11 +12,16 @@ see the function set_parameters_from_string() in the example section.
 
 from subprocess import Popen, PIPE
 import random
-import sys
+import argparse
 import copy
 import logging
+
 import spsa
 import utils
+
+
+APP_NAME = 'Python SPSA Parameter Optimizer'
+APP_VERSION = 1.0
 
 
 logging.basicConfig(format='%(asctime)s : %(message)s', level=logging.INFO,
@@ -38,8 +43,7 @@ class game_optimizer:
         # When using cutechess this is the number of rounds.
         # If repeat is set and games=2 and rounds=12, then
         # total games to estimate the gradient equals 2x12 or 24.
-        self.MINI_MATCH      = 2
-
+        self.MINI_MATCH      = 3
 
     def set_engine_command(self, command):
         """
@@ -52,7 +56,6 @@ class game_optimizer:
 
         # Store the command name
         self.ENGINE_COMMAND = command
-
 
     def launch_engine(self, theta):
         """
@@ -69,7 +72,7 @@ class game_optimizer:
         command = self.ENGINE_COMMAND + " "
         args = " " + str(self.MINI_MATCH) + " " + str(seed) + " "
         for (name, value) in theta.items():
-            args +=  " " + name + " " + str(value) + " "
+            args +=  " " + name + " " + str(value['value']) + " "
 
         # Debug the command
         # print("command + args = " + command + args)
@@ -97,10 +100,9 @@ class game_optimizer:
         """
 
         # Create the parameter vector
-        theta = {}
+        theta = copy.deepcopy(args)
         for (name, value) in self.THETA_0.items():
-            v = args[name]
-            theta[name] = v
+            theta[name]['value'] = args[name]['value']
 
         # Calculate the regularization term
         regularization = utils.regulizer(utils.difference(theta, self.THETA_0), 0.01, 0.5)
@@ -108,20 +110,20 @@ class game_optimizer:
         # Calculate the score of the minimatch
 
         # Change the value of theta or parameters to centipawn as input to engine.
-        # Todo: Read param and factor from config file.
-        factor = 1000
         param = copy.deepcopy(theta)
-        param.update((x, int(y * factor)) for x, y in param.items())
+        for k, v in param.items():
+            param[k]['value'] = int(param[k]['value'] * v['factor'])
         logging.info(f'{__file__} > new param: {param}')
 
         score = self.launch_engine(param)
         logging.info(f'{__file__} > match score: {score}')
+        logging.info(f'<best> perf: {score}')
 
         result = -score + regularization
         logging.info(f'{__file__} > regularization = {regularization}')
         logging.info(f'{__file__} > result = -score + regularization = -({score}) + {regularization} = {result}')
 
-        print("**args = " + utils.pretty(args))
+        print(f'**args = {args}')
         logging.info(f'{__file__} > spsa new param: {args}')
         print("goal   = " + str(-result))
         logging.info(f'{__file__} > goal = -(result) = -({result}) = {-result}')
@@ -134,62 +136,73 @@ class game_optimizer:
         This is the function to transform the list of parameters, given as a string,
         into a vector for internal usage by the class.
 
-        Example: "QueenValue 10.0  RookValue 6.0 "
-                       would be transformed into the following python vector:
-                 {'QueenValue': 10.0, 'RookValue': 6.0}
-                       this vector will be used as the starting point for the optimizer
+        Example:
+            From:
+            QueenValueOp 750 300 1500 1000, QueenValueEn 750 300 1500 1000
+            To:
+            {'QueenValueOp': {'value': 750, 'min': 300, 'max': 1500, 'factor': 1000}, 'QueenValueEn': {'value': 750, 'min': 300, 'max': 1500, 'factor': 1000}}
+
+        This vector will be used as the starting point for the optimizer.
+
+        Note: Parameter with space like Skill Level is not supported at the moment.
         """
+        init_param = {}
 
-        # Parse the string
-        s = ' '.join(s.split())
-        list = s.split(' ')
-        n = len(list)
+        param_div = s.split(',')
 
-        # Create the initial vector, and store it in THETA_0
-        # Change centipawn param value to decimal as input to spsa
-        # Todo: Read param and factor from config file.
-        factor = 1000
-        self.THETA_0 = {}
-        for k in range(0 , n // 2):
-            name  = list[ 2*k ]
-            value = float(list[ 2*k + 1]) / factor
-            self.THETA_0[name] = value
+        for par in param_div:
+            par = par.strip()
+            name = par.split()[0].strip()
+            val = int(par.split()[1].strip())
+            minv = int(par.split()[2].strip())
+            maxv = int(par.split()[3].strip())
+            factor = int(par.split()[4].strip())
+            init_param.update({name: {'value': val, 'min': minv, 'max': maxv, 'factor': factor}})
 
-        # The function also prints and returns THETA_0
-        print("read_parameters :  THETA_0 = " + utils.pretty(self.THETA_0))
-        logging.info(f'{__file__} > init param: {self.THETA_0}')
+        # Apply limits based on user input of min and max
+        self.THETA_0 = utils.apply_limits(init_param, is_factor=False)
+
+        logging.info(f'{__file__} > init param {self.THETA_0}')
+
         return self.THETA_0
 
 
-
-###### Example
-
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        prog='%s %s' % (APP_NAME, APP_VERSION),
+        description='Optimize parameters like evaluation parameters of a chess engine',
+        epilog='%(prog)s')
+    parser.add_argument('--iteration', required=False,
+                        help='input iteration, default=10000',
+                        type=int, default=10000)
+    parser.add_argument('--param', required=True,
+                        help='input parameters to optimize, example: '
+                             'queenvalue 800 700 1200 1000, rookvalue 500 400 700 1000, '
+                             '800 is the starting value '
+                             '700 is the minimum '
+                             '1200 is the maximum '
+                             '1000 is the factor, 800/factor will be sent to optimizer')
+
+    args = parser.parse_args()
+    iterations = args.iteration
+    parameters = args.param
 
     # Create the optimization object
     optimizer  = game_optimizer()
 
-    iterations = 500
-
     # Set the name of the script to run matches
     optimizer.set_engine_command("python chess-match.py")
-    #optimizer.set_engine_command("python match.py")
 
-    # Use this to get the initial parameters from a string
-    # parameters = "A 0.32  B 1.28"
-
-    # Use this to get the initial parameters from the command line
-    parameters = ' '.join(sys.argv[1:])
-
-    print("parameters = " + parameters)
+    print(f'parameters = {parameters}')
     theta0 = optimizer.set_parameters_from_string(parameters)
+
+    # Apply factor to the value before sending to optimizer
+    for k, v in theta0.items():
+        theta0[k]['value'] = int(v['value']) / int(v['factor'])
 
     # Create the SPSA minimizer with 10000 iterations...
     minimizer  = spsa.SPSA_minimization(optimizer.goal_function, theta0, iterations)
 
     # Run it!
     minimum = minimizer.run()
-    print("minimum = ", minimum)
-
-
-
+    print(f'minimum = {minimum}')
