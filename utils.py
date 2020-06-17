@@ -7,8 +7,7 @@ Author: Stéphane Nicolet
 import random
 import math
 import array
-
-
+import copy
 
 
 ### Helper functions
@@ -19,7 +18,7 @@ def norm2(m):
     """
     s = 0.0
     for (name, value) in m.items():
-        s += value ** 2
+        s += value['value'] ** 2
     return math.sqrt(s)
 
 
@@ -29,7 +28,7 @@ def norm1(m):
     """
     s = 0.0
     for (name, value) in m.items():
-        s += abs(value)
+        s += abs(value['value'])
     return s
 
 
@@ -39,12 +38,13 @@ def linear_combinaison(alpha = 1.0, m1 = {},
     Return the linear combinaison m = alpha * m1 + beta * m2.
     """
     if m2 == {}:
-        m2 = m1
+        m2 = copy.deepcopy(m1)
         beta = 0.0
 
-    m = {}
+    m = copy.deepcopy(m1)
     for (name, value) in m1.items():
-        m[name] = alpha * value + beta * m2.get(name, 0.0)
+        val = alpha * value['value'] + beta * m2[name]['value']
+        m[name]['value'] = val
 
     return m
 
@@ -73,6 +73,7 @@ def hadamard_product(m1, m2):
         m[name] = value * m2.get(name, 0.0)
 
     return m
+
 
 def regulizer(m, lambd , alpha):
     """
@@ -133,4 +134,38 @@ def pretty(m):
 
     return s
 
+def apply_limits(m, is_factor=True):
+    """
+    Set the value of a dict to a maximum if it is more than max.
+    Set the value of a dict to a minimum if it is below min.
+
+    m is a dict of dict. Example:
+    {'queen_opening': {'value': 950, 'min': 700, 'max': 1200, 'factor': 1000},
+    'rook_opening': {'value': 500, 'min': 300, 'max': 600, 'factor': 1000}}
+
+    :param m: a dict of dict
+    :return: updated m
+    """
+    for k, v in m.items():
+        factor = v['factor']
+        val = v['value']
+        if is_factor:
+            minv, maxv = v['min']/factor, v['max']/factor
+        else:
+            minv, maxv = v['min'], v['max']
+        if val < minv:
+            m[k]['value'] = minv
+        if val > maxv:
+            m[k]['value'] = maxv
+
+    return m
+
+
+def true_param(m):
+    # Todo: Determine if original param value is a float or integer.
+    # Now it is assumed that it is integer.
+    for k, v in m.items():
+        m[k]['value'] = int(m[k]['value'] * m[k]['factor'])
+
+    return m
 
