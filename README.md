@@ -3,10 +3,11 @@
 Optimizer for game coefficients using the SPSA algorithm.
 Author: Stéphane Nicolet
 
-Usage : *python game-optimizer.py [PARAM_NAME PARAM_VALUE]...*
-
-The parameter list can also we provided as a string in the Python code,
-see the function set_parameters_from_string() in the example section.
+Usage : *python game-optimizer.py --iteration 1000 --param "queenvalue 1000 800 1200 1000, rookvalue 500 450 600 1000"*  
+1000 is the value  
+800 is the min  
+1200 is the max  
+1000 is the factor, used to control the input number to optimizer. value/factor = 1000/1000 = 1 will be sent to optimizer. If the parameter is not sensitive to changes, increase the factor.
 
 ### List of files in the directory ###
 
