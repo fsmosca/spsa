@@ -115,11 +115,16 @@ class game_optimizer:
         logging.info(f'{__file__} > new param: {param}')
 
         score = self.launch_engine(param)
+        logging.info(f'{__file__} > match score: {score}')
 
         result = -score + regularization
+        logging.info(f'{__file__} > regularization = {regularization}')
+        logging.info(f'{__file__} > result = -score + regularization = -({score}) + {regularization} = {result}')
 
         print("**args = " + utils.pretty(args))
+        logging.info(f'{__file__} > spsa new param: {args}')
         print("goal   = " + str(-result))
+        logging.info(f'{__file__} > goal = -(result) = -({result}) = {-result}')
 
         return result
 
