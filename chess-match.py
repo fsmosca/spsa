@@ -23,10 +23,10 @@ parameters for game playing engines like Go, Chess, etc.
 
 In this script the following variables must be modified to fit the test
 environment and conditions. The default values are just examples.
-   'directory'
+   'test_engine_path'
+   'base_engine_path
    'cutechess_cli_path'
    'engine'
-   'engine_param_cmd'
    'opponents'
    'options'
 
@@ -40,48 +40,50 @@ a match result of (2 + 0.5 + 0) / 6 = 0.417
 from subprocess import Popen, PIPE
 import sys
 import logging
+from pathlib import Path
 
 
 logging.basicConfig(format='%(asctime)s : %(message)s', level=logging.INFO,
                     filename='spsa_log.txt', filemode='a')
 
 
-# The directory where the two engine executables will be found
-directory = 'D:/Chess/Engines/Stockfish/'
+# Folder for engines
+test_engine_path = Path('./engines/deuterium/deuterium_test.exe')
+base_engine_path = Path('./engines/deuterium/deuterium_base.exe')
 
 # Path to the cutechess-cli executable.
 # On Windows this should point to cutechess-cli.exe
-cutechess_cli_directory = 'D:/Chess/CuteChess-CLI/'
-cutechess_cli_path = cutechess_cli_directory + 'cutechess-cli'
+cutechess_cli_path = Path('./cutechess/cutechess-cli.exe')
 
 # The engine whose parameters will be optimized
-engine_test_name = 'stockfish'
-engine  = 'cmd=stockfish '
+engine_test_name = 'deuterium'
+engine  = f'cmd={test_engine_path} '
 engine += 'proto=uci '
-engine += 'option.Threads=1 '
 engine += f'name={engine_test_name} '
-
-# Format for the commands that are sent to the engine to
-# set the parameter values. When the match is run,
-# {name} will be replaced with the parameter name and {value}
-# with the parameter value.
-engine_param_cmd = 'setoption name {name} value {value}'
 
 # A pool of opponents for the engine. The opponent will be chosen
 # based on the seed sent by SPSA3. In Stockfish development we
 # usually use only one opponent in the pool (the old master branch).
 engine_base_name = 'base'
-opponents = [ f'cmd=base proto=uci option.Threads=1 name={engine_base_name}' ]
+# Unoptimize the queen piece values intentionally for the base engine,
+# let's see if test engine that starts from low value can defeat the base.
+opponents = [f'cmd={base_engine_path} proto=uci option.QueenValueOp=650 option.QueenValueEn=650 name={engine_base_name}']
 
 # Additional cutechess-cli options, eg. time control and opening book.
 # This is also were we set options used by both players.
-# Place the opening file in the engine folder or directory above.
-options  = ' -tournament gauntlet -pgnout results.pgn '
-options += ' -concurrency 3 '
+tourtype = 'gauntlet'
+gamefile = 'results.pgn'
+concur = 4
+tc = '0/10+0.05'
+opefile = Path('./startopening/2moves_v2.pgn')
+opeformat = 'pgn'
+
+options  = f' -tournament {tourtype} -pgnout {gamefile} min '
+options += f' -concurrency {concur} '
 options += ' -resign movecount=3 score=400 '
 options += ' -draw movenumber=34 movecount=8 score=20 '
-options += ' -each tc=0/10+0.05 option.Hash=128 '
-options += ' -openings file=2moves_v1.pgn format=pgn order=random plies=4 '
+options += f' -each tc={tc} '
+options += f' -openings file={opefile} format={opeformat} order=random '
 
 
 def main(argv = None):
@@ -123,15 +125,14 @@ def main(argv = None):
             print('Invalid value for parameter %s: %s' % (argv[i], argv[i + 1]))
             return 2
         # Pass SPSA3's parameters to the engine by using
-        # cutechess-cli's initialization string feature
-        initstr = engine_param_cmd.format(name = argv[i], value = argv[i + 1])
-        fcp += ' initstr="%s" ' % initstr
+        # cutechess-cli's option feature
+        fcp += f'option.{argv[i]}={argv[i + 1]} '
 
     cutechess_args  = ' -repeat -games 2 -rounds %s ' % rounds
     cutechess_args += ' -srand %d -engine %s -engine %s %s ' % (seed, fcp, scp, options)
-    
-    command  = ' cd ' + directory + ' && '
-    command += ' %s %s ' % (cutechess_cli_path, cutechess_args)
+
+    # Run optimizer at the folder where game-optimizer.py is located.
+    command = ' %s %s ' % (cutechess_cli_path, cutechess_args)
 
     logging.info(f'{__file__} > {command}')
 
