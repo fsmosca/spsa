@@ -112,6 +112,7 @@ class SPSA_minimization:
 
             ## For SPSA we update with a small step (theta = theta - a_k * gradient)
             theta = utils.linear_combinaison(1.0, theta, -a_k, gradient)
+            logging.info(f'{__file__} > theta from spsa: {theta}')
 
             ## For steepest descent we update via a constant small step in the gradient direction
             # mu = -0.01 / max(1.0, utils.norm2(gradient))
@@ -122,15 +123,21 @@ class SPSA_minimization:
 
             ## We then move to the point which gives the best average of goal
             (avg_goal , avg_theta) = self.average_best_evals(30)
+            logging.info(f'{__file__} > avg_theta from average_best_evals: {avg_theta}')
+
             theta = utils.linear_combinaison(0.98, theta, 0.02, avg_theta)
+            logging.info(f'{__file__} > theta with avg_theta: {theta}')
 
             if (k % 100 == 0) or (k <= 1000) :
                 (avg_goal , avg_theta) = self.average_evaluations(30)
                 print("iter = " + str(k))
+                logging.info(f'{__file__} > iter: {k}')
                 print("mean goal (all)   = " + str(avg_goal))
                 print("mean theta (all)  = " + utils.pretty(avg_theta))
 
                 (avg_goal , avg_theta) = self.average_best_evals(30)
+                logging.info(f'{__file__} > mean goal (best): {avg_goal}')
+                logging.info(f'{__file__} > mean theta (best): {avg_theta}')
                 print("mean goal (best)  = " + str(avg_goal))
                 print("mean theta (best) = " + utils.pretty(avg_theta))
 
