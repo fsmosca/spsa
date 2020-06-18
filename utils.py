@@ -4,9 +4,7 @@ Some utils for working on real vectors stored as dictionaries
 Author: Stéphane Nicolet
 """
 
-import random
 import math
-import array
 import copy
 
 
