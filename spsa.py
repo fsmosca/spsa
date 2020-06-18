@@ -19,7 +19,7 @@ logging.basicConfig(format='%(asctime)s : %(message)s', level=logging.INFO,
 
 class SPSA_minimization:
 
-    def __init__(self, f, theta0, max_iter, constraints = None, options = {}):
+    def __init__(self, f, theta0, max_iter, constraints=None, options={}):
         """
         The constructor of a SPSA_minimization object.
 
@@ -50,20 +50,20 @@ class SPSA_minimization:
         # Store the arguments
         self.f = f
         self.theta0 = theta0
-        self.iter = 0;
+        self.iter = 0
         self.max_iter = max_iter
         self.constraints = constraints
         self.options = options
 
         # some attributes to provide an history of evaluations
-        self.previous_gradient    = {}
-        self.rprop_previous_g     = {}
+        self.previous_gradient = {}
+        self.rprop_previous_g = {}
         self.rprop_previous_delta = {}
 
         self.history_eval = array.array('d', range(1000))
         self.history_theta = [theta0 for k in range(1000)]
         self.history_count = 0
-        
+
         self.best_eval = array.array('d', range(1000))
         self.best_theta = [theta0 for k in range(1000)]
         self.best_count = 0
@@ -77,7 +77,6 @@ class SPSA_minimization:
         self.gamma = options.get("gamma", 0.12) # theoretical gamma=0.101, must be <= 1/6
 
         self.A = options.get("A", max_iter / 10.0)
-
 
     def run(self):
         """
@@ -100,7 +99,7 @@ class SPSA_minimization:
             self.iter = k
 
             if self.constraints is not None:
-               theta = self.constraints(theta)
+                theta = self.constraints(theta)
 
             print(f'theta  = {theta}')
 
@@ -163,7 +162,6 @@ class SPSA_minimization:
 
         return theta
 
-
     def evaluate_goal(self, theta):
         """
         Return the evaluation of the goal function f at point theta.
@@ -183,7 +181,6 @@ class SPSA_minimization:
         self.history_count += 1
 
         return v
-
 
     def approximate_gradient(self, theta, c):
         """
@@ -284,7 +281,6 @@ class SPSA_minimization:
         # Return the estimation of the new gradient
         return gradient
 
-
     def create_bernouilli(self, m):
         """
         Create a random direction to estimate the stochastic gradient.
@@ -293,7 +289,6 @@ class SPSA_minimization:
         bernouilli = copy.deepcopy(m)
         for (name, value) in m.items():
             bernouilli[name]['value'] = 1 if random.randint(0, 1) else -1
-
 
         g = utils.norm2(self.previous_gradient)
         d = utils.norm2(bernouilli)
@@ -309,7 +304,6 @@ class SPSA_minimization:
                 bernouilli[name]['value'] = 0.2 * utils.sign_of(bernouilli[name]['value'])
 
         return bernouilli
-
 
     def average_evaluations(self, n):
         """
@@ -341,7 +335,6 @@ class SPSA_minimization:
         # return the average
         alpha = 1.0 / (1.0 * n)
         return (alpha * sum_eval , utils.linear_combinaison(alpha, sum_theta))
-    
 
     def average_best_evals(self, n):
         """
@@ -374,8 +367,6 @@ class SPSA_minimization:
         alpha = 1.0 / (1.0 * n)
         return (alpha * sum_eval , utils.linear_combinaison(alpha, sum_theta))
 
-
-
     def rprop(self, theta, gradient):
 
         # get the previous g of the RPROP algorithm
@@ -391,7 +382,6 @@ class SPSA_minimization:
             delta = gradient
             delta = utils.copy_and_fill(delta, 0.5)
 
-
         p = utils.hadamard_product(previous_g, gradient)
 
         print(f'gradient = {gradient}')
@@ -402,8 +392,8 @@ class SPSA_minimization:
         eta = {}
         for (name, value) in p.items():
 
-            if p[name] > 0   : eta[name] = 1.1   ## building speed
-            if p[name] < 0   : eta[name] = 0.5   ## we have passed a local minima: slow down
+            if p[name] > 0   : eta[name] = 1.1   # building speed
+            if p[name] < 0   : eta[name] = 0.5   # we have passed a local minima: slow down
             if p[name] == 0  : eta[name] = 1.0
 
             delta[name] = eta[name] * delta[name]
@@ -429,7 +419,6 @@ class SPSA_minimization:
         return s
 
 
-
 ###### Examples
 
 if __name__ == "__main__":
@@ -443,20 +432,14 @@ if __name__ == "__main__":
         return x * 100.0 + y * 3.0
     #print(SPSA_minimization(f, {"x" : 3.0, "y" : 2.0 } , 10000).run())
 
-
-
     def quadratic(x):
         return x * x + 4 * x + 3
     #print(SPSA_minimization(quadratic, {"x" : 10.0} , 1000).run())
 
-
-
     def g(**args):
         x = args["x"]
         return x * x
-    print(SPSA_minimization(g, {"x" : 3.0} , 1000).run())
-
-
+    print(SPSA_minimization(g, {"x":3.0}, 1000).run())
 
     def rastrigin(x, y):
         A = 10
@@ -464,26 +447,15 @@ if __name__ == "__main__":
                      + (y * y - A * math.cos(2 * math.pi * y))
     #print(SPSA_minimization(rastrigin, {"x" : 5.0, "y" : 4.0 } , 1000).run())
 
-
-
     def rosenbrock(x, y):
         return 100.0*((y-x*x)**2) + (x-1.0)**2
     ##print(SPSA_minimization(rosenbrock, {"x" : 1.0, "y" : 1.0 } , 1000).run())
 
-
-
-
     def himmelblau(x, y):
         return (x*x + y - 11)**2 + (x + y*y - 7)**2
-    theta0 = {"x" : 0.0, "y" : 0.0 }
+    theta0 = {"x": 0.0, "y": 0.0}
     #m = SPSA_minimization(himmelblau, theta0, 10000)
-
-
 
     ##minimum = m.run()
     #print("minimum =", minimum)
     #print("goal at minimum =", m.evaluate_goal(minimum))
-
-
-
-
