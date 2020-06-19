@@ -44,7 +44,7 @@ class game_optimizer:
         # When using cutechess this is the number of rounds.
         # If repeat is set and games=2 and rounds=12, then
         # total games to estimate the gradient equals 2x12 or 24.
-        self.MINI_MATCH = 2
+        self.MINI_MATCH = 1
 
     def set_engine_command(self, command):
         """
@@ -95,7 +95,7 @@ class game_optimizer:
         # Return the score of the match.
         return float(output)
 
-    def goal_function(self, **args):
+    def goal_function(self, i, **args):
         """
         This is the function that the class exports, and that can be plugged
         into the generic SPSA minimizer.
@@ -131,7 +131,7 @@ class game_optimizer:
         logging.info(f'{__file__} > regularization = {regularization}')
         logging.info(f'{__file__} > result = -score + regularization = -({score}) + {regularization} = {result}')
 
-        print("goal = " + str(-result))
+        print(f'goal = {-result}, {"+ck" if i == 0 else "-ck"}')
         logging.info(f'{__file__} > goal = -(result) = -({result}) = {-result}')
 
         return result
