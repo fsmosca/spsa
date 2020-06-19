@@ -101,7 +101,7 @@ class SPSA_minimization:
             if self.constraints is not None:
                 theta = self.constraints(theta)
 
-            print(f'theta  = {theta}')
+            print(f'theta update = {theta}')
 
             c_k = self.c / (k ** self.gamma)
             a_k = self.a / ((k + self.A) ** self.alpha)
@@ -146,13 +146,13 @@ class SPSA_minimization:
                 (avg_goal , avg_theta) = self.average_evaluations(30)
                 print("iter = " + str(k))
                 logging.info(f'{__file__} > iter: {k}')
-                print(f'mean goal (all)   = {avg_goal}')
-                print(f'mean theta (all)  = {utils.true_param(avg_theta)}')
+                print(f'mean goal (all) = {avg_goal}')
+                print(f'mean theta (all) = {utils.true_param(avg_theta)}')
 
                 (avg_goal , avg_theta) = self.average_best_evals(30)
                 logging.info(f'{__file__} > mean goal (best): {avg_goal}')
                 logging.info(f'{__file__} > mean theta (best): {avg_theta}')
-                print(f'mean goal (best)  = {avg_goal}')
+                print(f'mean goal (best) = {avg_goal}')
                 print(f'mean theta (best) = {utils.true_param(avg_theta)}')
 
             print("-----------------------------------------------------------------")
