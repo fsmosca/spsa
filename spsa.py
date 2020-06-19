@@ -9,6 +9,8 @@ import math
 import array
 import logging
 import copy
+import multiprocessing
+import time
 
 import utils
 
@@ -107,7 +109,7 @@ class SPSA_minimization:
             a_k = self.a / ((k + self.A) ** self.alpha)
 
             # Run the engine match here to get the gradient
-            gradient = self.approximate_gradient(theta, c_k)
+            gradient = self.approximate_gradient(theta, c_k, k)
 
             # For SPSA we update with a small step (theta = theta - a_k * gradient)
             if is_spsa:
@@ -144,7 +146,7 @@ class SPSA_minimization:
 
             if (k % 100 == 0) or (k <= 1000) :
                 (avg_goal , avg_theta) = self.average_evaluations(30)
-                print("iter = " + str(k))
+                print(f'iter = {k}/{self.max_iter}')
                 logging.info(f'{__file__} > iter: {k}')
                 print(f'mean goal (all) = {avg_goal}')
                 print(f'mean theta (all) = {utils.true_param(avg_theta)}')
@@ -162,7 +164,7 @@ class SPSA_minimization:
 
         return theta
 
-    def evaluate_goal(self, theta):
+    def evaluate_goal(self, theta, i, res, iter):
         """
         Return the evaluation of the goal function f at point theta.
 
@@ -172,7 +174,7 @@ class SPSA_minimization:
         progress of our minimization algorithm.
         """
 
-        v = self.f(**theta)
+        v = self.f(i, **theta)
 
         # store the value in history
 
@@ -180,9 +182,12 @@ class SPSA_minimization:
         self.history_theta[self.history_count % 1000] = theta
         self.history_count += 1
 
-        return v
+        if iter < 2:
+            return v
 
-    def approximate_gradient(self, theta, c):
+        res[i] = v
+
+    def approximate_gradient(self, theta, c, iter):
         """
         Return an approximation of the gradient of f at point theta.
 
@@ -218,7 +223,6 @@ class SPSA_minimization:
             theta1 = utils.apply_limits(theta1)
             logging.info(f'{__file__} theta1 with limits: {theta1}')
             logging.info(f'{__file__} > run 1st match with theta1: {theta1}')
-            f1 = self.evaluate_goal(theta1)
 
             random.setstate(state)
             theta2 = utils.linear_combinaison(1.0, theta, -c, bernouilli)
@@ -229,7 +233,34 @@ class SPSA_minimization:
             theta2 = utils.apply_limits(theta2)
             logging.info(f'{__file__} theta2 with limits: {theta2}')
             logging.info(f'{__file__} > run 2nd match with theta2: {theta2}')
-            f2 = self.evaluate_goal(theta2)
+
+            # Run the 2 matches in parallel after iteration 1.
+            manager = multiprocessing.Manager()
+            res = manager.dict()
+            thetas = [theta1, theta2]
+
+            if iter < 2:
+                t1 = time.perf_counter()
+                f1 = self.evaluate_goal(theta1, 0, res, iter)
+                logging.info(f'f1 elapse: {time.perf_counter() - t1: 0.2f}s')
+
+                t1 = time.perf_counter()
+                f2 = self.evaluate_goal(theta2, 1, res, iter)
+                logging.info(f'f2 elapse: {time.perf_counter() - t1: 0.2f}s')
+            else:
+                t1 = time.perf_counter()
+                jobs = []
+                for i in range(2):
+                    p = multiprocessing.Process(target=self.evaluate_goal, args=(thetas[i], i, res, iter))
+                    jobs.append(p)
+                    p.start()
+
+                for proc in jobs:
+                    proc.join()
+
+                logging.info(f'parallel elapse: {time.perf_counter() - t1: 0.2f}s')
+
+                f1, f2 = res.values()[0], res.values()[1]
 
             logging.info(f'{__file__} > f1: {f1}, f2: {f2}')
 
