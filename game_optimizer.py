@@ -36,14 +36,15 @@ class game_optimizer:
         """
 
         # Store the arguments
-        self.ENGINE_COMMAND  = ""   # name of the script used to make a match against the reference engine
-        self.THETA_0         = {}   # the initial set of parameter
+        # name of the script used to make a match against the reference engine
+        self.ENGINE_COMMAND = ""
+        self.THETA_0 = {}  # the initial set of parameter
 
         # Size of the minimatches used to estimate the gradient.
         # When using cutechess this is the number of rounds.
         # If repeat is set and games=2 and rounds=12, then
         # total games to estimate the gradient equals 2x12 or 24.
-        self.MINI_MATCH      = 3
+        self.MINI_MATCH = 2
 
     def set_engine_command(self, command):
         """
@@ -62,32 +63,37 @@ class game_optimizer:
         Launch the match of the engine with parameters theta
         """
 
-        # Each match will be started with a different seed, passed as a command line parameter
+        # Each match will be started with a different seed,
+        # passed as a command line parameter
         seed = random.randint(1, 100000000)  # a random seed
 
-        # Debug the seed
-        # print("seed = " + str(seed))
-
         # Create the command line and the list of parameters
-        command = self.ENGINE_COMMAND + " "
-        args = " " + str(self.MINI_MATCH) + " " + str(seed) + " "
-        for (name, value) in theta.items():
-            args +=  " " + name + " " + str(value['value']) + " "
+        command = f'{self.ENGINE_COMMAND}'
+        args = f'--rounds {self.MINI_MATCH} '
+        args += f'--seed {seed}'
 
-        # Debug the command
-        # print("command + args = " + command + args)
+        new_param, cnt = '"', 0
+        for name, value in theta.items():
+            cnt += 1
+            new_param += f'{name} {value["value"]} {value["min"]} {value["max"]} {value["factor"]}'
+            if cnt < len(theta):
+                new_param += ', '
+            else:
+                new_param += '"'
+
+        match_command = f'{command} {args} --param {new_param}'
+        logging.info(f'{__file__} > match_command: {match_command}')
 
         # We use a subprocess to launch the match
-        process = Popen(command + args, shell = True, stdout = PIPE)
+        process = Popen(match_command, stdout=PIPE, text=True)
         output = process.communicate()[0]
 
         if process.returncode != 0:
-            print('ERROR in launch_engine: could not execute command: %s' % (command + args))
-            return -10000
+            logging.exception('There is problem in match process!')
+            raise
 
-        # the score of the match
+        # Return the score of the match.
         return float(output)
-
 
     def goal_function(self, **args):
         """
@@ -98,6 +104,9 @@ class game_optimizer:
         we want to *maximize* the score but SPSA is a minimizer). Note that we add
         a regulization term, which helps the convexity of the problem.
         """
+
+        print(f'param suggestion from optimizer: {args}')
+        logging.info(f'{__file__} > param suggestion from optimizer: {args}')
 
         # Create the parameter vector
         theta = copy.deepcopy(args)
@@ -113,23 +122,19 @@ class game_optimizer:
         param = copy.deepcopy(theta)
         for k, v in param.items():
             param[k]['value'] = int(param[k]['value'] * v['factor'])
-        logging.info(f'{__file__} > new param: {param}')
+        logging.info(f'{__file__} > new param for test engine: {param}')
 
         score = self.launch_engine(param)
         logging.info(f'{__file__} > match score: {score}')
-        logging.info(f'<best> perf: {score}')
 
         result = -score + regularization
         logging.info(f'{__file__} > regularization = {regularization}')
         logging.info(f'{__file__} > result = -score + regularization = -({score}) + {regularization} = {result}')
 
-        print(f'**args = {args}')
-        logging.info(f'{__file__} > spsa new param: {args}')
-        print("goal   = " + str(-result))
+        print("goal = " + str(-result))
         logging.info(f'{__file__} > goal = -(result) = -({result}) = {-result}')
 
         return result
-
 
     def set_parameters_from_string(self, s):
         """
@@ -140,7 +145,8 @@ class game_optimizer:
             From:
             QueenValueOp 750 300 1500 1000, QueenValueEn 750 300 1500 1000
             To:
-            {'QueenValueOp': {'value': 750, 'min': 300, 'max': 1500, 'factor': 1000}, 'QueenValueEn': {'value': 750, 'min': 300, 'max': 1500, 'factor': 1000}}
+            {'QueenValueOp': {'value': 750, 'min': 300, 'max': 1500, 'factor': 1000},
+             'QueenValueEn': {'value': 750, 'min': 300, 'max': 1500, 'factor': 1000}}
 
         This vector will be used as the starting point for the optimizer.
 
@@ -188,7 +194,7 @@ if __name__ == "__main__":
     parameters = args.param
 
     # Create the optimization object
-    optimizer  = game_optimizer()
+    optimizer = game_optimizer()
 
     # Set the name of the script to run matches
     optimizer.set_engine_command("python chess_match.py")
@@ -201,7 +207,7 @@ if __name__ == "__main__":
         theta0[k]['value'] = int(v['value']) / int(v['factor'])
 
     # Create the SPSA minimizer with 10000 iterations...
-    minimizer  = spsa.SPSA_minimization(optimizer.goal_function, theta0, iterations)
+    minimizer = spsa.SPSA_minimization(optimizer.goal_function, theta0, iterations)
 
     # Run it!
     minimum = minimizer.run()
