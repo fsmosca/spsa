@@ -3,7 +3,7 @@
 Optimizer for game coefficients using the SPSA algorithm.
 Author: Stéphane Nicolet
 
-Usage : python game-optimizer.py [PARAM_NAME PARAM_VALUE]...
+Usage : python game-optimizer.py --iteration <number of iterations>
 
 The parameter list can also we provided as a string in the Python code,
 see the function set_parameters_from_string() in the example section.
@@ -44,15 +44,13 @@ class game_optimizer:
         self.ENGINE_COMMAND = ""
         self.THETA_0 = {}  # the initial set of parameter
 
-        # Size of the minimatches used to estimate the gradient.
-        # When using cutechess this is the number of rounds.
-        # If repeat is set and games=2 and rounds=12, then
-        # total games to estimate the gradient equals 2x12 or 24.
-        self.MINI_MATCH = 1
-
         self.fcp = ''  # First or test engine setting
         self.scp = ''  # Second or base engine setting
         self.param = ''  # Parameters to optimize
+
+        self.tour_manager = ''
+        self.tour_manager_options = ''
+        self.tour_manager_eng_options = ''
 
     def set_engine_command(self, command):
         """
@@ -77,10 +75,12 @@ class game_optimizer:
 
         # Create the command line and the list of parameters
         command = f'{self.ENGINE_COMMAND}'
-        args = f'--rounds {self.MINI_MATCH} '
-        args += f'--seed {seed} '
+        args = f'--seed {seed} '
         args += f'--fcp "{self.fcp}" '
-        args += f'--scp "{self.scp}"'
+        args += f'--scp "{self.scp}" '
+        args += f'--cutechess-cli-path {self.tour_manager} '
+        args += f'--cutechess-cli-options "{self.tour_manager_options}" '
+        args += f'--cutechess-cli-engine-options "{self.tour_manager_eng_options}" '
 
         new_param, cnt = '"', 0
         for name, value in theta.items():
@@ -243,6 +243,43 @@ class game_optimizer:
 
         self.param = param
 
+    def get_cutechess_cli_options(self):
+        with open(self.setting_file) as f:
+            dy = yaml.safe_load(f)
+            for name1, value1 in dy.items():
+                if name1 == 'cutechess':
+                    for name2, value2 in value1.items():
+                        if name2 == 'file':
+                            self.tour_manager = f'{Path(value2).as_posix()}'
+                        elif name2 == 'option':
+                            for name3, value3 in value2.items():
+                                if name3 == 'engine_option':
+                                    # Can be tc, or ponder, depth, nodes, trust, proto
+                                    for name4, value4 in value3.items():
+                                        self.tour_manager_eng_options += f'{name4}={value4} '
+                                elif name3 == 'cutechess_option':
+                                    for name4, value4 in value3.items():
+                                        if name4 in ['tournament', 'concurrency', 'games', 'repeat', 'rounds']:
+                                            self.tour_manager_options += f'-{name4} {value4} '
+                                        elif name4 == 'pgnout':
+                                            pout = '-pgnout '
+                                            for name5, value5 in value4.items():
+                                                if name5 == 'file':
+                                                    pout += f'{value5} '
+                                                elif name5 == 'option':
+                                                    pout += f'{value5} '
+                                            self.tour_manager_options += f'{pout} '
+                                        elif name4 == 'openings':
+                                            opt = '-openings '
+                                            for name5, value5 in value4.items():
+                                                if name5 == 'file':
+                                                    opt += f'{name5}={Path(value5).as_posix()} '
+                                                else:
+                                                    opt += f'{name5}={value5} '
+                                            self.tour_manager_options += f' {opt} '
+
+        logging.info(f'{__file__} > tour_manager: {self.tour_manager}, tour_manager_options: {self.tour_manager_options}, tour_manager_eng_options: {self.tour_manager_eng_options}')
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -264,6 +301,8 @@ if __name__ == "__main__":
     optimizer.get_engines_info()
 
     optimizer.get_parameter_to_optimize()
+
+    optimizer.get_cutechess_cli_options()
 
     # Set the name of the script to run matches
     optimizer.set_engine_command("python chess_match.py")
