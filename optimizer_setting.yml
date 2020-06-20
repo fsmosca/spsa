@@ -1,11 +1,11 @@
 # optimizer_setting.yml
-# The current optimizer is still not capable of using this file.
-
+# Cutechess is not yet used. Only test_engine and base_engine sections are supported so far.
 
 # Main section for the engine under tests
 test_engine:
   file: "./engines/deuterium/deuterium_test.exe"
   name: "test"
+  proto: "uci"
   option:
     Hash: 64  # mb
 
@@ -15,15 +15,15 @@ test_engine:
   # is low optimizer will only suggest smaller changes to initial value. If the
   # parameter is not sensitive to changes, you can increase the factor.
   parameter_to_optimize:
-    QueenValueOp: {value: 700, min: 600, max: 1500, factor: 1000}
-    QueenValueEn: {value: 700, min: 600, max: 1500, factor: 1000}
-    RookValueOp: {value: 500, min: 400, max: 600, factor: 1000}
+    QueenValueOp: {value: 650, min: 300, max: 1500, factor: 1000}
+    QueenValueEn: {value: 650, min: 300, max: 1500, factor: 1000}
 
 
 # Main section for the engine with fix setting as opponent to test_engine
 base_engine:
   file: "./engines/deuterium/deuterium_base.exe"
   name: "base"
+  proto: "uci"
   option:
     Hash: 64
     QueenValueOp: 650  # In cp to weaken the engine, optimal is 1000 cp
@@ -31,6 +31,7 @@ base_engine:
 
 
 # Main section for tournament manager
+# Not yet used.
 cutechess:
   file: "./cutechess/cutechess-cli.exe"
   option:
