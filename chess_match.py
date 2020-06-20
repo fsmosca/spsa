@@ -44,6 +44,9 @@ from pathlib import Path
 import argparse
 
 
+APP_VERSION = 1.1
+
+
 logging.basicConfig(format='%(asctime)s : %(message)s', level=logging.INFO,
                     filename='spsa_log.txt', filemode='a')
 
@@ -60,7 +63,7 @@ cutechess_cli_path = Path('./cutechess/cutechess-cli.exe')
 # This is also were we set options used by both players.
 tourtype = 'gauntlet'
 gamefile = 'results2.pgn'
-concur = 4
+concur = 2
 tc = '0/3+0.05'
 opefile = Path('./startopening/2moves_v2.pgn')
 opeformat = 'pgn'
@@ -74,15 +77,25 @@ options += f' -openings file={opefile} format={opeformat} order=random '
 
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('--rounds', required=False,
                         help='number of rounds for cutechess, default=2',
                         type=int, default=2)
     parser.add_argument('--seed', required=False,
                         help='random seed for cutechess, default=0',
                         type=int, default=0)
+    parser.add_argument('--fcp', required=True,
+                        help='first engine or test engine setting.\n'
+                             'Example 1:\n'
+                             '--fcp "cmd=deuterium.exe name=test proto-uci"\n'
+                             'Example 2 with opetion:\n'
+                             '--fcp "cmd=deuterium.exe name=test option.Hash=64 proto-uci"')
+    parser.add_argument('--scp', required=True,
+                        help='second engine or base engine setting, this is similar to fcp\n'
+                             'Example:\n'
+                             '--scp "cmd=deuterium.exe name=base proto-uci"')
     parser.add_argument('--param', required=True,
-                        help='parameters to be optimized. '
+                        help='parameters to be optimized.\n'
                         'Example "QueenValueOp 800 500 1500 1000, RookValueOp ..."')
 
     args = parser.parse_args()
