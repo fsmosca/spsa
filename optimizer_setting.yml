@@ -4,7 +4,7 @@
 # Main section for the engine under tests
 test_engine:
   file: "./engines/deuterium/deuterium_test.exe"
-  name: "test"
+  name: "test"  # Don't use name with space
   proto: "uci"
   option:
     Hash: 64  # mb
@@ -22,7 +22,7 @@ test_engine:
 # Main section for the engine with fix setting as opponent to test_engine
 base_engine:
   file: "./engines/deuterium/deuterium_base.exe"
-  name: "base"
+  name: "base"  # Don't use name with space
   proto: "uci"
   option:
     Hash: 64
