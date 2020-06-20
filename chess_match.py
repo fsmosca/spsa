@@ -100,20 +100,16 @@ def main():
 
     args = parser.parse_args()
 
-    # test engine option
-    engine_test_name = 'deuterium'
-    engine = f'cmd={test_engine_path} '
-    engine += 'proto=uci '
-    engine += f'name={engine_test_name} '
-
-    # Opponent of test engine
-    engine_base_name = 'base'
-    opponents = [f'cmd={base_engine_path} proto=uci name={engine_base_name}']
-
     rounds = args.rounds
     seed = args.seed
 
-    fcp = engine
+    # test engine
+    fcp = args.fcp
+    engine_test_name = args.fcp.split('name=')[1].strip().split()[0].strip()
+
+    # base engine
+    opponents = [args.scp]
+    engine_base_name = args.scp.split('name=')[1].strip().split()[0].strip()
     scp = opponents[seed % len(opponents)]
 
     # Parse the parameters that should be optimized
@@ -124,7 +120,7 @@ def main():
         sppar = par.split()  # Does not support param with space
         spname = sppar[0].strip()
         spvalue = int(sppar[1].strip())
-        fcp += f'option.{spname}={spvalue} '
+        fcp += f' option.{spname}={spvalue} '
 
     cutechess_args  = ' -repeat -games 2 -rounds %s ' % rounds
     cutechess_args += ' -srand %d -engine %s -engine %s %s ' % (seed, fcp, scp, options)
