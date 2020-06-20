@@ -105,7 +105,6 @@ class game_optimizer:
         a regulization term, which helps the convexity of the problem.
         """
 
-        print(f'param suggestion from optimizer: {args}')
         logging.info(f'{__file__} > param suggestion from optimizer: {args}')
 
         # Create the parameter vector
@@ -123,6 +122,7 @@ class game_optimizer:
         for k, v in param.items():
             param[k]['value'] = int(param[k]['value'] * v['factor'])
         logging.info(f'{__file__} > new param for test engine: {param}')
+        print(f'param suggestion from optimizer: {param}')
 
         score = self.launch_engine(param)
         logging.info(f'{__file__} > match score: {score}')
