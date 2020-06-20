@@ -103,10 +103,19 @@ class SPSA_minimization:
             if self.constraints is not None:
                 theta = self.constraints(theta)
 
-            print(f'theta update = {theta}')
+            theta_update = copy.deepcopy(theta)
+            for name, value in theta.items():
+                theta_update[name]['value'] = int(value['value'] * value['factor'])
+
+            print(f'spsa param update at iter {k}:')
+            for name, value in theta_update.items():
+                print(f'  {name}: {value["value"]}')
 
             c_k = self.c / (k ** self.gamma)
             a_k = self.a / ((k + self.A) ** self.alpha)
+
+            print(f'  ck: {c_k:0.5f}')
+            print(f'  ak: {a_k:0.5f}')
 
             # Run the engine match here to get the gradient
             gradient = self.approximate_gradient(theta, c_k, k)
