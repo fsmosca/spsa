@@ -52,7 +52,7 @@ class game_optimizer:
 
         self.fcp = ''  # First or test engine setting
         self.scp = ''  # Second or base engine setting
-        self.param = '' # Parameters to optimize
+        self.param = ''  # Parameters to optimize
 
     def set_engine_command(self, command):
         """
@@ -110,9 +110,10 @@ class game_optimizer:
         This is the function that the class exports, and that can be plugged
         into the generic SPSA minimizer.
 
-        Mainly we launch the engine match, take the opposite of the score (because
-        we want to *maximize* the score but SPSA is a minimizer). Note that we add
-        a regulization term, which helps the convexity of the problem.
+        Mainly we launch the engine match, take the opposite of the score
+        (because we want to *maximize* the score but SPSA is a minimizer).
+        Note that we add a regulization term, which helps the convexity
+        of the problem.
         """
 
         logging.info(f'{__file__} > param suggestion from optimizer: {args}')
@@ -182,7 +183,6 @@ class game_optimizer:
 
         return self.THETA_0
 
-
     def get_engines_info(self):
         """
         Read yaml setting file to get engine info.
@@ -234,11 +234,14 @@ class game_optimizer:
                             cnt = 0
                             for name3, value3 in value2.items():
                                 cnt += 1
-                                param += f'{name3} {int(value3["value"])} {int(value3["min"])} {int(value3["max"])} {int(value3["factor"])}'
+                                param += f'{name3} {int(value3["value"])} '
+                                param += f'{int(value3["min"])} '
+                                param += f'{int(value3["max"])} '
+                                param += f'{int(value3["factor"])}'
                                 if cnt < len(value2):
                                     param += ', '
 
-        self.param = f'{param}'
+        self.param = param
 
 
 if __name__ == "__main__":
