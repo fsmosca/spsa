@@ -15,13 +15,15 @@ import random
 import argparse
 import copy
 import logging
+from pathlib import Path
+import yaml
 
 import spsa
 import utils
 
 
 APP_NAME = 'Python SPSA Parameter Optimizer'
-APP_VERSION = 1.0
+APP_VERSION = 1.1
 
 
 logging.basicConfig(format='%(asctime)s : %(message)s', level=logging.INFO,
@@ -30,10 +32,12 @@ logging.basicConfig(format='%(asctime)s : %(message)s', level=logging.INFO,
 
 class game_optimizer:
 
-    def __init__(self):
+    def __init__(self, setting_file='optimizer_setting.yml'):
         """
         The constructor of a game_optimizer object.
         """
+
+        self.setting_file = setting_file
 
         # Store the arguments
         # name of the script used to make a match against the reference engine
@@ -45,6 +49,9 @@ class game_optimizer:
         # If repeat is set and games=2 and rounds=12, then
         # total games to estimate the gradient equals 2x12 or 24.
         self.MINI_MATCH = 1
+
+        self.fcp = ''  # First or test engine setting
+        self.scp = ''  # Second or base engine setting
 
     def set_engine_command(self, command):
         """
@@ -70,7 +77,9 @@ class game_optimizer:
         # Create the command line and the list of parameters
         command = f'{self.ENGINE_COMMAND}'
         args = f'--rounds {self.MINI_MATCH} '
-        args += f'--seed {seed}'
+        args += f'--seed {seed} '
+        args += f'--fcp "{self.fcp}" '
+        args += f'--scp "{self.scp}"'
 
         new_param, cnt = '"', 0
         for name, value in theta.items():
@@ -173,6 +182,41 @@ class game_optimizer:
         return self.THETA_0
 
 
+    def get_engines_info(self):
+        """
+        Read yaml setting file to get engine info.
+
+        :return:
+        """
+        fcp, scp = '', ''
+        with open(self.setting_file) as f:
+            dy = yaml.safe_load(f)
+            for name1, value1 in dy.items():
+                if name1 == 'test_engine':
+                    for name2, value2 in value1.items():
+                        if name2 == 'file':
+                            path = Path(value2).as_posix()
+                            fcp += f'cmd={path}'
+                        elif name2 == 'name':
+                            fcp += f' name={value2}'
+                        elif name2 == 'option':
+                            for name3, value3 in value2.items():
+                                fcp += f' option.{name3}={value3}'
+
+                elif name1 == 'base_engine':
+                    for name2, value2 in value1.items():
+                        if name2 == 'file':
+                            path = Path(value2).as_posix()
+                            scp += f'cmd={path}'
+                        elif name2 == 'name':
+                            scp += f' name={value2}'
+                        elif name2 == 'option':
+                            for name3, value3 in value2.items():
+                                scp += f' option.{name3}={value3}'
+
+        self.fcp, self.scp = fcp, scp
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         prog='%s %s' % (APP_NAME, APP_VERSION),
@@ -194,7 +238,11 @@ if __name__ == "__main__":
     parameters = args.param
 
     # Create the optimization object
-    optimizer = game_optimizer()
+    optimizer = game_optimizer('optimizer_setting.yml')
+
+    # Define fcp and scp, these are engines info for a game match.
+    # This will be used in launch_engine().
+    optimizer.get_engines_info()
 
     # Set the name of the script to run matches
     optimizer.set_engine_command("python chess_match.py")
