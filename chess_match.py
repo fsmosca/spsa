@@ -13,11 +13,11 @@ Organize a small chess match with a set of parameters, using cutechess-cli:
 
 This script works between SPSA3 and cutechess-cli, a chess utility to organize
 matches between chess engines. This Python script plays one MATCH between two
-chess engines. One of the engines receives the list of arguments values given 
+chess engines. One of the engines receives the list of arguments values given
 on the command line, and the other one being chosen by the script among a fixed
 pool of oppenent(s) specified in the script.
 
-Note: SPSA3 is used as black-box parameter tuning tool, in an implementation  
+Note: SPSA3 is used as black-box parameter tuning tool, in an implementation
 written by S. Nicolet. This is the SPSA algorithm, with a focus on optimizing
 parameters for game playing engines like Go, Chess, etc.
 
@@ -37,10 +37,9 @@ match). For example in a match of six games, 2 wins, 1 draw and 3 losses gives
 a match result of (2 + 0.5 + 0) / 6 = 0.417
 """
 
+
 from subprocess import Popen, PIPE
-import sys
 import logging
-from pathlib import Path
 import argparse
 
 
@@ -51,36 +50,9 @@ logging.basicConfig(format='%(asctime)s : %(message)s', level=logging.INFO,
                     filename='spsa_log.txt', filemode='a')
 
 
-# Folder for engines
-test_engine_path = Path('./engines/deuterium/deuterium_test.exe')
-base_engine_path = Path('./engines/deuterium/deuterium_base.exe')
-
-# Path to the cutechess-cli executable.
-# On Windows this should point to cutechess-cli.exe
-cutechess_cli_path = Path('./cutechess/cutechess-cli.exe')
-
-# Additional cutechess-cli options, eg. time control and opening book.
-# This is also were we set options used by both players.
-tourtype = 'gauntlet'
-gamefile = 'results2.pgn'
-concur = 2
-tc = '0/3+0.05'
-opefile = Path('./startopening/2moves_v2.pgn')
-opeformat = 'pgn'
-
-options  = f' -tournament {tourtype} -pgnout {gamefile} fi '
-options += f' -concurrency {concur} '
-options += ' -resign movecount=3 score=400 twosided=true '
-options += ' -draw movenumber=34 movecount=8 score=5 '
-options += f' -each tc={tc} '
-options += f' -openings file={opefile} format={opeformat} order=random '
-
-
 def main():
-    parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument('--rounds', required=False,
-                        help='number of rounds for cutechess, default=2',
-                        type=int, default=2)
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('--seed', required=False,
                         help='random seed for cutechess, default=0',
                         type=int, default=0)
@@ -94,13 +66,20 @@ def main():
                         help='second engine or base engine setting, this is similar to fcp\n'
                              'Example:\n'
                              '--scp "cmd=deuterium.exe name=base proto-uci"')
+    parser.add_argument('--cutechess-cli-path', required=True,
+                        help='path of cutechess-cli program')
+    parser.add_argument('--cutechess-cli-options', required=True,
+                        help='cutechess-cli options')
+    parser.add_argument('--cutechess-cli-engine-options', required=True,
+                        help='cutechess-cli engine options')
     parser.add_argument('--param', required=True,
                         help='parameters to be optimized.\n'
                         'Example "QueenValueOp 800 500 1500 1000, RookValueOp ..."')
 
     args = parser.parse_args()
-
-    rounds = args.rounds
+    cutechess_cli_path = args.cutechess_cli_path.rstrip()
+    cutechess_cli_options = args.cutechess_cli_options.rstrip()
+    cutechess_cli_engine_options = args.cutechess_cli_engine_options.rstrip()
     seed = args.seed
 
     # test engine
@@ -122,12 +101,10 @@ def main():
         spvalue = int(sppar[1].strip())
         fcp += f' option.{spname}={spvalue} '
 
-    cutechess_args  = ' -repeat -games 2 -rounds %s ' % rounds
-    cutechess_args += ' -srand %d -engine %s -engine %s %s ' % (seed, fcp, scp, options)
-
-    # Run optimizer at the folder where game-optimizer.py is located.
-    command = ' %s %s ' % (cutechess_cli_path, cutechess_args)
-
+    # Run optimizer at the folder where game_optimizer.py is located.
+    command = f'{cutechess_cli_path} {cutechess_cli_options} -srand {seed} '
+    command += f'-engine {fcp} -engine {scp} '
+    command += f'-each {cutechess_cli_engine_options}'
     logging.info(f'{__file__} > {command}')
 
     # Run cutechess-cli and wait for it to finish
@@ -137,12 +114,12 @@ def main():
         print('Could not execute command: %s' % command)
         return 2
 
-    # Convert cutechess-cli's output into a match score: 
+    # Convert cutechess-cli's output into a match score:
     # we search for the last line containing a score of the match
     result = ""
     for line in output.splitlines():
         if line.startswith(f'Score of {engine_test_name} vs {engine_base_name}'):
-            result = line[line.find("[")+1 : line.find("]")]
+            result = line[line.find("[")+1: line.find("]")]
 
     if result == "":
         raise Exception('The match did not terminate properly')
