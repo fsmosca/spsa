@@ -36,6 +36,32 @@ cutechess:
   file: "./cutechess/cutechess-cli.exe"
   option:
     tournament: "round-robin"
-    pgnout: "output_game.pgn"
-    concurrency: 4
+    time_control: "0/10+0.05"  # Time Control
 
+    concurrency: 4
+    games: 2
+    repeat: 2
+    rounds: 1
+
+    pgnout:
+      file: "output_game.pgn"
+      option: "min"  # min or fi, min=minimal/compact pgn format, fi=unfinished games are not saved.
+
+    openings:
+      file: "./startopening/2moves_v2.pgn"
+      format: "pgn"  # epd
+      order: "random"  # sequential
+      plies: 10000
+      start: 1
+      policy: "default"
+
+    adjudications:
+      win:
+        movecount: 4
+        score: 400
+        twosided: true  # false
+
+      draw:
+        movenumber: 40
+        movecount: 4
+        score: 5
