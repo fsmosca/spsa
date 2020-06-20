@@ -277,6 +277,12 @@ class game_optimizer:
                                                 else:
                                                     opt += f'{name5}={value5} '
                                             self.tour_manager_options += f' {opt} '
+                                        elif name4 == 'adjudications':
+                                            for name5, value5 in value4.items():
+                                                opt = f' -{name5} '
+                                                for name6, value6 in value5.items():
+                                                    opt += f'{name6}={value6} '
+                                                self.tour_manager_options += f'{opt} '
 
         logging.info(f'{__file__} > tour_manager: {self.tour_manager}, tour_manager_options: {self.tour_manager_options}, tour_manager_eng_options: {self.tour_manager_eng_options}')
 
