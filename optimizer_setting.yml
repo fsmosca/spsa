@@ -38,10 +38,10 @@ cutechess:
 
     cutechess_option:
       tournament: "round-robin"
-      concurrency: 3
+      concurrency: 2
       games: 2
       repeat: 2
-      rounds: 3
+      rounds: 1
 
       pgnout:
         file: "output_game.pgn"
