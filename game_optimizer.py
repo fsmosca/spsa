@@ -52,6 +52,7 @@ class game_optimizer:
 
         self.fcp = ''  # First or test engine setting
         self.scp = ''  # Second or base engine setting
+        self.param = '' # Parameters to optimize
 
     def set_engine_command(self, command):
         """
@@ -196,25 +197,48 @@ class game_optimizer:
                     for name2, value2 in value1.items():
                         if name2 == 'file':
                             path = Path(value2).as_posix()
-                            fcp += f'cmd={path}'
-                        elif name2 == 'name':
-                            fcp += f' name={value2}'
+                            fcp += f'cmd={path} '
+                        elif name2 == 'name' or name2 == 'proto':
+                            fcp += f'{name2}={value2} '
                         elif name2 == 'option':
                             for name3, value3 in value2.items():
-                                fcp += f' option.{name3}={value3}'
+                                fcp += f' option.{name3}={value3} '
 
                 elif name1 == 'base_engine':
                     for name2, value2 in value1.items():
                         if name2 == 'file':
                             path = Path(value2).as_posix()
-                            scp += f'cmd={path}'
-                        elif name2 == 'name':
-                            scp += f' name={value2}'
+                            scp += f'cmd={path} '
+                        elif name2 == 'name' or name2 == 'proto':
+                            scp += f'{name2}={value2} '
                         elif name2 == 'option':
                             for name3, value3 in value2.items():
-                                scp += f' option.{name3}={value3}'
+                                scp += f' option.{name3}={value3} '
 
-        self.fcp, self.scp = fcp, scp
+        self.fcp, self.scp = fcp.rstrip(), scp.rstrip()
+
+    def get_parameter_to_optimize(self):
+        """
+        Read optimizer_setting.yml and save the parameters.
+
+        :return:
+        """
+        param = ''
+        with open(self.setting_file) as f:
+            dy = yaml.safe_load(f)
+            for name1, value1 in dy.items():
+                if name1 == 'test_engine':
+                    for name2, value2 in value1.items():
+                        # QueenValueOp: {value: 700, min: 600, max: 1500, factor: 1000}
+                        if name2 == 'parameter_to_optimize':
+                            cnt = 0
+                            for name3, value3 in value2.items():
+                                cnt += 1
+                                param += f'{name3} {int(value3["value"])} {int(value3["min"])} {int(value3["max"])} {int(value3["factor"])}'
+                                if cnt < len(value2):
+                                    param += ', '
+
+        self.param = f'{param}'
 
 
 if __name__ == "__main__":
@@ -225,17 +249,9 @@ if __name__ == "__main__":
     parser.add_argument('--iteration', required=False,
                         help='input iteration, default=10000',
                         type=int, default=10000)
-    parser.add_argument('--param', required=True,
-                        help='input parameters to optimize, example: '
-                             'queenvalue 800 700 1200 1000, rookvalue 500 400 700 1000, '
-                             '800 is the starting value '
-                             '700 is the minimum '
-                             '1200 is the maximum '
-                             '1000 is the factor, 800/factor will be sent to optimizer')
 
     args = parser.parse_args()
     iterations = args.iteration
-    parameters = args.param
 
     # Create the optimization object
     optimizer = game_optimizer('optimizer_setting.yml')
@@ -244,11 +260,13 @@ if __name__ == "__main__":
     # This will be used in launch_engine().
     optimizer.get_engines_info()
 
+    optimizer.get_parameter_to_optimize()
+
     # Set the name of the script to run matches
     optimizer.set_engine_command("python chess_match.py")
 
-    print(f'parameters = {parameters}')
-    theta0 = optimizer.set_parameters_from_string(parameters)
+    print(f'parameters to optimize = {optimizer.param}')
+    theta0 = optimizer.set_parameters_from_string(optimizer.param)
 
     # Apply factor to the value before sending to optimizer
     for k, v in theta0.items():
