@@ -75,8 +75,8 @@ class SPSA_minimization:
         self.a = options.get("a", 1.1)
         self.c = options.get("c", 0.1)
 
-        self.alpha = options.get("alpha", 0.70) # theoretical alpha=0.601, must be <= 1
-        self.gamma = options.get("gamma", 0.12) # theoretical gamma=0.101, must be <= 1/6
+        self.alpha = options.get("alpha", 0.70)  # theoretical alpha=0.601, must be <= 1
+        self.gamma = options.get("gamma", 0.12)  # theoretical gamma=0.101, must be <= 1/6
 
         self.A = options.get("A", max_iter / 10.0)
 
@@ -97,7 +97,7 @@ class SPSA_minimization:
 
         while True:
             k = k + 1
-            
+
             self.iter = k
 
             if self.constraints is not None:
@@ -139,7 +139,7 @@ class SPSA_minimization:
             logging.info(f'{__file__} > theta with limits: {theta}')
 
             # We then move to the point which gives the best average of goal
-            (avg_goal , avg_theta) = self.average_best_evals(30)
+            (avg_goal, avg_theta) = self.average_best_evals(30)
             logging.info(f'{__file__} > avg_theta from average_best_evals: {avg_theta}')
 
             theta = utils.linear_combinaison(0.98, theta, 0.02, avg_theta)
@@ -153,14 +153,14 @@ class SPSA_minimization:
             for kv, vv in theta.items():
                 logging.info(f'<best> iter: {k}, param: {kv}, value: {int(vv["value"]*vv["factor"])}')
 
-            if (k % 100 == 0) or (k <= 1000) :
-                (avg_goal , avg_theta) = self.average_evaluations(30)
+            if (k % 100 == 0) or (k <= 1000):
+                (avg_goal, avg_theta) = self.average_evaluations(30)
                 print(f'iter = {k}/{self.max_iter}')
                 logging.info(f'{__file__} > iter: {k}')
                 print(f'mean goal (all) = {avg_goal}')
                 print(f'mean theta (all) = {utils.true_param(avg_theta)}')
 
-                (avg_goal , avg_theta) = self.average_best_evals(30)
+                (avg_goal, avg_theta) = self.average_best_evals(30)
                 logging.info(f'{__file__} > mean goal (best): {avg_goal}')
                 logging.info(f'{__file__} > mean theta (best): {avg_theta}')
                 print(f'mean goal (best) = {avg_goal}')
@@ -187,7 +187,7 @@ class SPSA_minimization:
 
         # store the value in history
 
-        self.history_eval [self.history_count % 1000] = v
+        self.history_eval[self.history_count % 1000] = v
         self.history_theta[self.history_count % 1000] = theta
         self.history_count += 1
 
@@ -304,15 +304,15 @@ class SPSA_minimization:
 
         # Store the current gradient for the next time, to calculate the running average
         self.previous_gradient = gradient
-        
+
         # Store the best the two evals f1 and f2 (or both)
         if (f1 <= current_goal):
-            self.best_eval [self.best_count % 1000] = f1
+            self.best_eval[self.best_count % 1000] = f1
             self.best_theta[self.best_count % 1000] = theta1
             self.best_count += 1
-        
+
         if (f2 <= current_goal):
-            self.best_eval [self.best_count % 1000] = f2
+            self.best_eval[self.best_count % 1000] = f2
             self.best_theta[self.best_count % 1000] = theta2
             self.best_count += 1
 
@@ -334,8 +334,9 @@ class SPSA_minimization:
         d = utils.norm2(bernouilli)
 
         if g > 0.00001:
-            bernouilli = utils.linear_combinaison(0.55        , bernouilli, \
-                                                  0.25 * d / g, self.previous_gradient)
+            bernouilli = utils.linear_combinaison(0.55, bernouilli,
+                                                  0.25 * d / g,
+                                                  self.previous_gradient)
         
         for (name, value) in m.items():
             if bernouilli[name]['value'] == 0.0:
@@ -355,26 +356,31 @@ class SPSA_minimization:
         so the returned value is an upper bound of the true value).
         """
 
-        assert(self.history_count > 0) , "not enough evaluations in average_evaluations!"
+        assert(self.history_count > 0), "not enough evaluations in average_evaluations!"
 
-        if n <= 0                 : n = 1
-        if n > 1000               : n = 1000
-        if n > self.history_count : n = self.history_count
+        if n <= 0:
+            n = 1
+        if n > 1000:
+            n = 1000
+        if n > self.history_count:
+            n = self.history_count
 
-        sum_eval  = 0.0
+        sum_eval = 0.0
         sum_theta = utils.linear_combinaison(0.0, self.theta0)
         for i in range(n):
 
             j = ((self.history_count - 1) % 1000) - i
-            if j < 0     : j += 1000
-            if j >= 1000 : j -= 1000
+            if j < 0:
+                j += 1000
+            if j >= 1000:
+                j -= 1000
 
             sum_eval += self.history_eval[j]
             sum_theta = utils.sum(sum_theta, self.history_theta[j])
 
         # return the average
         alpha = 1.0 / (1.0 * n)
-        return (alpha * sum_eval , utils.linear_combinaison(alpha, sum_theta))
+        return (alpha * sum_eval, utils.linear_combinaison(alpha, sum_theta))
 
     def average_best_evals(self, n):
         """
@@ -386,26 +392,31 @@ class SPSA_minimization:
         so the returned value is an upper bound of the true value).
         """
 
-        assert(self.best_count > 0) , "not enough evaluations in average_evaluations!"
+        assert(self.best_count > 0), "not enough evaluations in average_evaluations!"
 
-        if n <= 0              : n = 1
-        if n > 1000            : n = 1000
-        if n > self.best_count : n = self.best_count
+        if n <= 0:
+            n = 1
+        if n > 1000:
+            n = 1000
+        if n > self.best_count:
+            n = self.best_count
 
-        sum_eval  = 0.0
+        sum_eval = 0.0
         sum_theta = utils.linear_combinaison(0.0, self.theta0)
         for i in range(n):
 
             j = ((self.best_count - 1) % 1000) - i
-            if j < 0     : j += 1000
-            if j >= 1000 : j -= 1000
+            if j < 0:
+                j += 1000
+            if j >= 1000:
+                j -= 1000
 
             sum_eval += self.best_eval[j]
             sum_theta = utils.sum(sum_theta, self.best_theta[j])
 
         # return the average
         alpha = 1.0 / (1.0 * n)
-        return (alpha * sum_eval , utils.linear_combinaison(alpha, sum_theta))
+        return (alpha * sum_eval, utils.linear_combinaison(alpha, sum_theta))
 
     def rprop(self, theta, gradient):
 
@@ -432,9 +443,12 @@ class SPSA_minimization:
         eta = {}
         for (name, value) in p.items():
 
-            if p[name] > 0   : eta[name] = 1.1   # building speed
-            if p[name] < 0   : eta[name] = 0.5   # we have passed a local minima: slow down
-            if p[name] == 0  : eta[name] = 1.0
+            if p[name] > 0:
+                eta[name] = 1.1   # building speed
+            if p[name] < 0:
+                eta[name] = 0.5   # we have passed a local minima: slow down
+            if p[name] == 0:
+                eta[name] = 1.0
 
             delta[name] = eta[name] * delta[name]
             delta[name] = min(50.0, delta[name])
@@ -459,7 +473,7 @@ class SPSA_minimization:
         return s
 
 
-###### Examples
+# Examples
 
 if __name__ == "__main__":
     """
@@ -470,16 +484,16 @@ if __name__ == "__main__":
 
     def f(x, y):
         return x * 100.0 + y * 3.0
-    #print(SPSA_minimization(f, {"x" : 3.0, "y" : 2.0 } , 10000).run())
+    # print(SPSA_minimization(f, {"x" : 3.0, "y" : 2.0 } , 10000).run())
 
     def quadratic(x):
         return x * x + 4 * x + 3
-    #print(SPSA_minimization(quadratic, {"x" : 10.0} , 1000).run())
+    # print(SPSA_minimization(quadratic, {"x" : 10.0} , 1000).run())
 
     def g(**args):
         x = args["x"]
         return x * x
-    print(SPSA_minimization(g, {"x":3.0}, 1000).run())
+    print(SPSA_minimization(g, {"x": 3.0}, 1000).run())
 
     def rastrigin(x, y):
         A = 10
@@ -489,13 +503,13 @@ if __name__ == "__main__":
 
     def rosenbrock(x, y):
         return 100.0*((y-x*x)**2) + (x-1.0)**2
-    ##print(SPSA_minimization(rosenbrock, {"x" : 1.0, "y" : 1.0 } , 1000).run())
+    # print(SPSA_minimization(rosenbrock, {"x" : 1.0, "y" : 1.0 } , 1000).run())
 
     def himmelblau(x, y):
         return (x*x + y - 11)**2 + (x + y*y - 7)**2
     theta0 = {"x": 0.0, "y": 0.0}
-    #m = SPSA_minimization(himmelblau, theta0, 10000)
+    # m = SPSA_minimization(himmelblau, theta0, 10000)
 
-    ##minimum = m.run()
-    #print("minimum =", minimum)
-    #print("goal at minimum =", m.evaluate_goal(minimum))
+    # minimum = m.run()
+    # print("minimum =", minimum)
+    # print("goal at minimum =", m.evaluate_goal(minimum))
