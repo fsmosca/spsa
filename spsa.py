@@ -358,12 +358,8 @@ class SPSA_minimization:
 
         assert(self.history_count > 0), "not enough evaluations in average_evaluations!"
 
-        if n <= 0:
-            n = 1
-        if n > 1000:
-            n = 1000
-        if n > self.history_count:
-            n = self.history_count
+        n = max(1, min(1000, n))
+        n = min(n, self.history_count)
 
         sum_eval = 0.0
         sum_theta = utils.linear_combinaison(0.0, self.theta0)
@@ -394,12 +390,8 @@ class SPSA_minimization:
 
         assert(self.best_count > 0), "not enough evaluations in average_evaluations!"
 
-        if n <= 0:
-            n = 1
-        if n > 1000:
-            n = 1000
-        if n > self.best_count:
-            n = self.best_count
+        n = max(1, min(1000, n))
+        n = min(n, self.best_count)
 
         sum_eval = 0.0
         sum_theta = utils.linear_combinaison(0.0, self.theta0)
