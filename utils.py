@@ -162,8 +162,8 @@ def apply_limits(m, is_factor=True):
 def true_param(m):
     # Todo: Determine if original param value is a float or integer.
     # Now it is assumed that it is integer.
+    ret = copy.deepcopy(m)
     for k, v in m.items():
-        m[k]['value'] = int(m[k]['value'] * m[k]['factor'])
+        ret[k]['value'] = int(m[k]['value'] * m[k]['factor'])
 
-    return m
-
+    return ret
