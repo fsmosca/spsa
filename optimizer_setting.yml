@@ -39,11 +39,15 @@ cutechess:
       tc: "0/5+0.05"
 
     cutechess_option:
+      # Total games per engine match are games x rounds.
+      # There are 2 matches that will done per iteration.
+      # These 2 matches will be done in parallel.
+      # Each match is done concurrently by concurrency value.
       tournament: "round-robin"
       concurrency: 2
       games: 2
-      repeat: 2
-      rounds: 1
+      repeat: 2  # Start engine color is reversed.
+      rounds: 2
 
       pgnout:
         file: "output_game.pgn"
