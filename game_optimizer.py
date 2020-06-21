@@ -133,7 +133,6 @@ class game_optimizer:
         for k, v in param.items():
             param[k]['value'] = int(param[k]['value'] * v['factor'])
         logging.info(f'{__file__} > new param for test engine: {param}')
-        print(f'param suggestion from optimizer: {param}')
 
         score = self.launch_engine(param)
         logging.info(f'{__file__} > match score: {score}')
@@ -142,8 +141,8 @@ class game_optimizer:
         logging.info(f'{__file__} > regularization = {regularization}')
         logging.info(f'{__file__} > result = -score + regularization = -({score}) + {regularization} = {result}')
 
-        print(f'goal = {-result}, {"+ck" if i == 0 else "-ck"}')
-        logging.info(f'{__file__} > goal = -(result) = -({result}) = {-result}')
+        # print(f'goal = {-result}, {"+ck" if i == 0 else "-ck"}')
+        # logging.info(f'{__file__} > goal = -(result) = -({result}) = {-result}')
 
         return result
 
