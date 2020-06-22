@@ -233,7 +233,7 @@ class SPSA_minimization:
             if k >= self.max_iter:
                 break
 
-        return theta
+        return utils.true_param(theta)
 
     def evaluate_goal(self, theta, i, res, iter):
         """
