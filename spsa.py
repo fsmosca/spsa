@@ -11,6 +11,7 @@ import logging
 import copy
 import multiprocessing
 import time
+from pathlib import Path
 
 import utils
 
@@ -21,7 +22,12 @@ logging.basicConfig(format='%(asctime)s : %(message)s', level=logging.INFO,
 
 class SPSA_minimization:
 
-    def __init__(self, f, theta0, max_iter, constraints=None, options={}):
+    # Optimizer goal is to get close to -1.0. In every iteration
+    # the goal must be improved towards -1.0.
+    BAD_GOAL = 1.0
+
+    def __init__(self, f, theta0, max_iter, constraints=None, options={},
+                 stop_all_mean_goal=-0.95, stop_min_iter=10000):
         """
         The constructor of a SPSA_minimization object.
 
@@ -80,6 +86,20 @@ class SPSA_minimization:
 
         self.A = options.get("A", max_iter / 10.0)
 
+        # This optimizer requires 2 engine matches to get the gradient.
+        # We start the parallel match at iteration equals iter_parallel_start.
+        self.iter_parallel_start = 2
+
+        self.stop_all_mean_goal = stop_all_mean_goal
+        self.stop_min_iter = stop_min_iter
+
+        # Save param, value and best mean goal and total mean goal
+        self.plot_data_file = 'plot_data.csv'
+
+        # Delete existing output csv file.
+        csvoutfn = Path(self.plot_data_file)
+        csvoutfn.unlink(missing_ok=True)
+
     def run(self):
         """
         Return a point which is (hopefully) a minimizer of the goal
@@ -115,13 +135,12 @@ class SPSA_minimization:
             c_k = self.c / (k ** self.gamma)
             a_k = self.a / ((k + self.A) ** self.alpha)
 
-            print(f'  ck: {c_k:0.5f}')
-            print(f'  ak: {a_k:0.5f}')
+            # print(f'  ck: {c_k:0.5f}')
+            # print(f'  ak: {a_k:0.5f}')
 
             # Run the engine match here to get the gradient
             print(f'Run engine match ...')
             gradient = self.approximate_gradient(theta, c_k, k)
-            print(f'Done engine match!')
 
             # For SPSA we update with a small step (theta = theta - a_k * gradient)
             if is_spsa:
@@ -178,14 +197,38 @@ class SPSA_minimization:
                 # print(f'mean goal (all) = {avg_goal}')
                 # print(f'mean theta (all) = {utils.true_param(avg_theta)}')
 
-                (avg_goal, avg_theta) = self.average_best_evals(30)
-                logging.info(f'{__file__} > mean goal (best): {avg_goal}')
+                (avg_best_goal, avg_theta) = self.average_best_evals(30)
+                logging.info(f'{__file__} > mean goal (best): {avg_best_goal}')
                 logging.info(f'{__file__} > mean theta (best): {avg_theta}')
                 # print(f'mean goal (best) = {avg_goal}')
                 # print(f'mean theta (best) = {utils.true_param(avg_theta)}')
+                print(f'best mean goal: {avg_best_goal}')
+
+                # Save data in csv for plotting.
+                plot_data = {}
+                plot_data.update({'iter': k})
+                plot_data.update({'bestmeangoal': avg_best_goal})
+                plot_data.update({'allmeangoal': avg_goal})
+                plot_theta = utils.true_param(theta)
+                for name, value in plot_theta.items():
+                    plot_data.update({name: value["value"]})
+
+                with open(self.plot_data_file, 'a') as f:
+                    cnt = 0
+                    for name, value in plot_data.items():
+                        cnt += 1
+                        if cnt == len(plot_data):
+                            f.write(f'{value}\n')
+                        else:
+                            f.write(f'{value},')
 
             print(f'done iter {k}!')
             print('=========================================')
+
+            # Stopping rule
+            if k >= self.stop_min_iter and avg_goal <= self.stop_all_mean_goal:
+                print('Stop opimization due to good average goal!')
+                break
 
             if k >= self.max_iter:
                 break
@@ -207,13 +250,15 @@ class SPSA_minimization:
 
         v = self.f(i, **theta)
 
-        # store the value in history
-
+        # Store the value in history. This is only stored if iter is below
+        # iter_parallel_start, otherwise we store the history after the
+        # parallel matches are both finished.
         self.history_eval[self.history_count % 1000] = v
         self.history_theta[self.history_count % 1000] = theta
         self.history_count += 1
 
-        if iter < 2:
+        # Todo: Improve method to return values.
+        if iter < self.iter_parallel_start:
             return v  # Run match one at a time
 
         res[i] = v  # Run matches in parallel
@@ -226,14 +271,17 @@ class SPSA_minimization:
         converges almost surely to the true gradient of f at theta.
         """
 
+        true_theta = utils.true_param(theta)
+
         if self.history_count > 0:
             current_goal, _ = self.average_evaluations(30)
         else:
-            current_goal = 100000000000000000.0
+            current_goal = SPSA_minimization.BAD_GOAL
 
         logging.info(f'{__file__} > current_goal: {current_goal}')
 
-        print(f'current optimizer average goal: {current_goal:0.5f} (low is better)')
+        print(f'current optimizer mean goal: {current_goal:0.5f} (low is better, lowest: -1.0, highest: 1.0)')
+        print(f'Sample, optimizer goal = -(engine match score) or -(3.0 pts/4 games) or -0.75')
 
         bernouilli = self.create_bernouilli(theta)
 
@@ -272,29 +320,31 @@ class SPSA_minimization:
             res = manager.dict()
             thetas = [theta1, theta2]
 
-            if iter < 2:
+            if iter < self.iter_parallel_start:
                 print('Run match 1 ...')
                 true_param = utils.true_param(theta1)
                 print('param to use:')
-                for name, val in true_param.items():
-                    print(f'  {name}: {val["value"]}')
+                for (name, val), (name1, val1) in zip(true_param.items(), true_theta.items()):
+                    print(f'  {name}: {val["value"]}, delta applied: {val["value"] - val1["value"]:+}')
 
                 t1 = time.perf_counter()
                 f1 = self.evaluate_goal(theta1, 0, res, iter)
-                logging.info(f'f1 elapse: {time.perf_counter() - t1: 0.2f}s')
-                print('Done match 1!')
+                logging.info(f'f1 elapse: {time.perf_counter() - t1:0.2f}s')
+                print(f'Done match 1!, elapse: {time.perf_counter() - t1:0.2f}sec')
 
                 # Run match 2
                 print('Run match 2 ...')
                 true_param = utils.true_param(theta2)
                 print('param to use:')
-                for name, val in true_param.items():
-                    print(f'  {name}: {val["value"]}')
+                for (name, val), (name1, val1) in zip(true_param.items(), true_theta.items()):
+                    print(f'  {name}: {val["value"]}, delta applied: {val["value"] - val1["value"]:+}')
 
                 t1 = time.perf_counter()
                 f2 = self.evaluate_goal(theta2, 1, res, iter)
-                logging.info(f'f2 elapse: {time.perf_counter() - t1: 0.2f}s')
-                print('Done match 2!')
+                logging.info(f'f2 elapse: {time.perf_counter() - t1:0.2f}s')
+                print(f'Done match 2!, elapse: {time.perf_counter() - t1:0.2f}sec')
+
+                print(f'Done engine match!')
             else:
                 print('Run 2 matches in parallel ...')
                 t1 = time.perf_counter()
@@ -303,23 +353,31 @@ class SPSA_minimization:
                     print(f'Run match {i + 1} ...')
                     true_param = utils.true_param(thetas[i])
                     print('param to use:')
-                    for name, val in true_param.items():
-                        print(f'  {name}: {val["value"]}')
+                    for (name, val), (name1, val1) in zip(true_param.items(), true_theta.items()):
+                        print(f'  {name}: {val["value"]}, delta applied: {val["value"] - val1["value"]:+}')
                     p = multiprocessing.Process(target=self.evaluate_goal, args=(thetas[i], i, res, iter))
                     jobs.append(p)
                     p.start()
 
                 for num, proc in enumerate(jobs):
                     proc.join()
-                    print(f'Done match {num + 1}!')
 
-                logging.info(f'parallel elapse: {time.perf_counter() - t1: 0.2f}s')
+                    # If match is done in parallel, update the history count, eval and theta here.
+                    self.history_eval[self.history_count % 1000] = res.values()[num]
+                    self.history_theta[self.history_count % 1000] = thetas[num]
+                    self.history_count += 1
+
+                    print(f'Done match {num + 1}!, elapse: {time.perf_counter() - t1:0.2f}sec')
+
+                logging.info(f'parallel elapse: {time.perf_counter() - t1:0.2f}s')
+
+                print(f'Done engine match!')
 
                 f1, f2 = res.values()[0], res.values()[1]
 
             logging.info(f'{__file__} > f1: {f1}, f2: {f2}')
-            print(f'optimizer goal after match 1: {f1} (low is better)')
-            print(f'optimizer goal after match 2: {f2} (low is better)')
+            print(f'optimizer goal after match 1: {f1:0.5f} (low is better)')
+            print(f'optimizer goal after match 2: {f2:0.5f} (low is better)')
 
             if f1 != f2:
                 break
@@ -424,6 +482,8 @@ class SPSA_minimization:
 
         n = max(1, min(1000, n))
         n = min(n, self.history_count)
+        # print(f'n = {n}')
+        # print(f'hist_cnt = {self.history_count}')
 
         sum_eval = 0.0
         sum_theta = utils.linear_combinaison(0.0, self.theta0)
@@ -434,6 +494,8 @@ class SPSA_minimization:
                 j += 1000
             if j >= 1000:
                 j -= 1000
+
+            # print(f'i={i}, j={j}, hist_cnt: {self.history_count}, hist_eval[{j}] = {self.history_eval[j]}')
 
             sum_eval += self.history_eval[j]
             sum_theta = utils.sum(sum_theta, self.history_theta[j])
