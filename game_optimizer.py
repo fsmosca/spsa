@@ -99,8 +99,7 @@ class game_optimizer:
         output = process.communicate()[0]
 
         if process.returncode != 0:
-            logging.exception('There is problem in match process!')
-            raise
+            raise Exception('There is problem in engine match process!')
 
         # Return the score of the match.
         return float(output)
@@ -294,6 +293,13 @@ if __name__ == "__main__":
     parser.add_argument('--iteration', required=False,
                         help='input iteration, default=10000',
                         type=int, default=10000)
+    parser.add_argument('--stop-all-mean-goal', required=False,
+                        help='input mean goal to stop the optimizer, default=-0.95',
+                        type=float, default=-0.95)
+    parser.add_argument('--stop-min-iter', required=False,
+                        help='input min iteration to stop the optimizer when\n'
+                             'the mean goal condition is meet, default=10000',
+                        type=int, default=10000)
 
     args = parser.parse_args()
     iterations = args.iteration
@@ -312,7 +318,7 @@ if __name__ == "__main__":
     # Set the name of the script to run matches
     optimizer.set_engine_command("python chess_match.py")
 
-    print(f'parameters to optimize = {optimizer.param}')
+    print(f'\nparameters to optimize = {optimizer.param}')
     theta0 = optimizer.set_parameters_from_string(optimizer.param)
 
     # Apply factor to the value before sending to optimizer
@@ -320,7 +326,10 @@ if __name__ == "__main__":
         theta0[k]['value'] = int(v['value']) / int(v['factor'])
 
     # Create the SPSA minimizer with 10000 iterations...
-    minimizer = spsa.SPSA_minimization(optimizer.goal_function, theta0, iterations)
+    minimizer = spsa.SPSA_minimization(optimizer.goal_function, theta0,
+                                       iterations,
+                                       stop_all_mean_goal=args.stop_all_mean_goal,
+                                       stop_min_iter=args.stop_min_iter)
 
     # Run it!
     minimum = minimizer.run()
