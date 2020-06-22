@@ -32,7 +32,7 @@ base_engine:
 
 # Main section for tournament manager
 cutechess:
-  file: "D:/github/spsa/cutechess/cutechess-cli.exe"  # Use absolute path
+  file: "./cutechess/cutechess-cli.exe"
   option:
     # Common option applied to both engines.
     engine_option:
