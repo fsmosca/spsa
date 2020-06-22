@@ -248,7 +248,11 @@ class game_optimizer:
                 if name1 == 'cutechess':
                     for name2, value2 in value1.items():
                         if name2 == 'file':
-                            self.tour_manager = f'{Path(value2).as_posix()}'
+                            file_path = Path(value2)
+                            if file_path.is_absolute():
+                                self.tour_manager = f'{file_path.as_posix()}'
+                            else:
+                                self.tour_manager = f'{Path(file_path.cwd(), file_path).as_posix()}'
                         elif name2 == 'option':
                             for name3, value3 in value2.items():
                                 if name3 == 'engine_option':
