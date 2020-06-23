@@ -3,7 +3,7 @@
 Optimizer for game coefficients using the SPSA algorithm.
 Author: Stéphane Nicolet
 
-### Installation
+### A. Installation
 * On windows
   * Install python 3.8 from https://www.python.org/downloads/  
   * Install requirements.txt  
@@ -14,7 +14,7 @@ Author: Stéphane Nicolet
   * Run the optimizer
   `python game_optimizer.py`
 
-### Usage:  
+### B. Usage:  
 `python game_optimizer.py`
 
 #### Save console output to file testlog.txt in windows 10 powershell
@@ -214,7 +214,29 @@ starting iter 4 ...
 ...
 ```
 
-### List of files in the directory ###
+### C. Sample Optimization scenario
+#### Computer with 8 threads
+* Computer has 8 threads, either from 4 cores and 8 threads or 8 cores.
+* You can use 4 threads for optimization, leave the other 4 threads for personal use.
+* This optimizer needs to run 2 matches per iteration.
+* In optimizer_setting.yml for cutechess section, set concurrency to 2 because 4 threads/2 is 2.
+* So for match 1, set games per encounter to 2, set rounds to 2 set repeat to 2,  
+that would generate 4 games from 2 games per encounter x 2 rounds. With concurrency of 2,  
+2 games will be started automatically by cutechess.
+* Meanwhile match 2 also starts with same conditions as in match 1. Match 1 and Match 2 will be run  
+in parallel starting at iteration 2.
+* Overall there are 8 games to be completed in every iteration in this setup.
+* In both match 1 and 2, it is better to have more games so that the optimizer can give better prediction  
+of optimal parameter values that will be tried in the next iteration. If you want 8 games in match 1 and 8  
+games in match 2, just increase the number of rounds to 4, that is from 2 games per encounter x 4 rounds equals 8 games.
+
+#### Computer with 16 threads
+* You may use 12 threads for optimization.
+* Set concurrency of cutechess to 6, match 1 will use 6 and match 2 will use 6 too.
+* If you want 6 games in match 1 and 6 games in match 2, set games per encounter to 2 and set rounds to 3.  
+6 games will be started by cutechess concurrently for match 1 and in parallel, 6 games will be started by cutechess for match 2.
+
+### D. List of files in the directory ###
 
 - *game_optimizer.py* : the main file of the package
 - *spsa.py* : a general-purpose minimization algorithm (an improved version of the SPSA algorithm)
@@ -223,5 +245,5 @@ starting iter 4 ...
 - *chess_game.py* : organize one game of Chess between two engines. Can be plugged into *match.py*
 - *chess_match.py* : a specialized Chess version of *match.py*, more efficient because it uses parallelism for the match
 
-### Sample run
+### E. Sample run
 [Queen piece value optimization](https://github.com/fsmosca/spsa/wiki/Sample-run)
