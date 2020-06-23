@@ -12,7 +12,7 @@ Author: Stéphane Nicolet
   Press `Clone->Download ZIP` at the top-right of this page.
   * Edit optimizer_setting.yml with notepad or notepad++ to set the engine and cutechess options.
   * Run the optimizer
-  `python game_optimizer.py iteration 10000`
+  `python game_optimizer.py`
 
 ### Usage:  
 `python game_optimizer.py`
