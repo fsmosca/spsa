@@ -27,7 +27,8 @@ class SPSA_minimization:
     BAD_GOAL = 1.0
 
     def __init__(self, f, theta0, max_iter, constraints=None, options={},
-                 stop_all_mean_goal=-0.95, stop_min_iter=10000):
+                 stop_all_mean_goal=-0.95, stop_best_mean_goal=-0.95,
+                 stop_min_iter=10000):
         """
         The constructor of a SPSA_minimization object.
 
@@ -90,7 +91,10 @@ class SPSA_minimization:
         # We start the parallel match at iteration equals iter_parallel_start.
         self.iter_parallel_start = 2
 
+        # After every match the goal or score of an engine match is saved.
+        # It is save in all_goal_history and best_goal_history.
         self.stop_all_mean_goal = stop_all_mean_goal
+        self.stop_best_mean_goal = stop_best_mean_goal
         self.stop_min_iter = stop_min_iter
 
         # Save param, value and best mean goal and total mean goal
@@ -225,12 +229,21 @@ class SPSA_minimization:
             print(f'done iter {k}!')
             print('=========================================')
 
-            # Stopping rule
+            # Stopping rule 1: Average goal and iteration meet the
+            # stop_all_mean_goal and stop_min_iter criteria.
             if k >= self.stop_min_iter and avg_goal <= self.stop_all_mean_goal:
-                print('Stop opimization due to good average goal!')
+                print('Stop opimization due to good average all goal!')
                 break
 
+            # Stopping rule 2: Average best goal and iteration meet the
+            # stop_best_mean_goal and stop_min_iter criteria.
+            if k >= self.stop_min_iter and avg_best_goal <= self.stop_best_mean_goal:
+                print('Stop opimization due to good average best goal!')
+                break
+
+            # Stopping rule 3: Max iteration is reached.
             if k >= self.max_iter:
+                print('Stop opimization due to max iteration!')
                 break
 
         return utils.true_param(theta)
