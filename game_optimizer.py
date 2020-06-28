@@ -300,6 +300,9 @@ if __name__ == "__main__":
     parser.add_argument('--stop-all-mean-goal', required=False,
                         help='input mean goal to stop the optimizer, default=-0.95',
                         type=float, default=-0.95)
+    parser.add_argument('--stop-best-mean-goal', required=False,
+                        help='input best mean goal to stop the optimizer, default=-0.95',
+                        type=float, default=-0.95)
     parser.add_argument('--stop-min-iter', required=False,
                         help='input min iteration to stop the optimizer when\n'
                              'the mean goal condition is meet, default=10000',
@@ -333,6 +336,7 @@ if __name__ == "__main__":
     minimizer = spsa.SPSA_minimization(optimizer.goal_function, theta0,
                                        iterations,
                                        stop_all_mean_goal=args.stop_all_mean_goal,
+                                       stop_best_mean_goal=args.stop_best_mean_goal,
                                        stop_min_iter=args.stop_min_iter)
 
     # Run it!
