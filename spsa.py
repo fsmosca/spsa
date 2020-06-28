@@ -99,10 +99,22 @@ class SPSA_minimization:
 
         # Save param, value and best mean goal and total mean goal
         self.plot_data_file = 'plot_data.csv'
+        self.init_plot_output()
 
-        # Delete existing output csv file.
+    def init_plot_output(self):
+        """
+        Delete existing csv output file and add headers.
+        """
         csvoutfn = Path(self.plot_data_file)
         csvoutfn.unlink(missing_ok=True)
+
+        with open(self.plot_data_file, 'a') as f:
+            f.write('iter,bestmeangoal,bestallgoal,')
+            for i, k in enumerate(list(self.theta0.keys())):
+                if i < len(self.theta0) - 1:
+                    f.write(f'{k},')
+                else:
+                    f.write(f'{k}\n')
 
     def run(self):
         """
