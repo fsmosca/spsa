@@ -105,3 +105,24 @@ ENV/
 # mypy
 .mypy_cache/
 .DS_Store
+
+# Pycharm
+*idea
+
+# Logs
+*.txt
+
+# Bokeh output
+*.html
+
+# Batch files
+*.bat
+
+# PGN output files
+*.pgn
+
+# csv output files
+*.csv
+
+# Positions
+*.fen
