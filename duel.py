@@ -44,12 +44,16 @@ def save_game(outfn, fen, moves, e1, e2, start_turn, gres):
         f.write('\n\n')
 
 
-def match(e1, e2, fen, param, output_game_file, movetimems=100):
+def match(e1, e2, fen, param, output_game_file, btms=10000, incms=100):
     """
     Run an engine match between e1 and e2. Save the game and print result
     from e1 perspective.
+
+    :btms: base time in ms
+    :incms: increment time in ms
     """
     move_hist = []
+    time_value = btms//100 + incms//100  # Convert ms to centisec
 
     pe1 = subprocess.Popen(e1, stdin=subprocess.PIPE,
                            stdout=subprocess.PIPE,
@@ -82,8 +86,11 @@ def match(e1, e2, fen, param, output_game_file, movetimems=100):
         e.stdin.write('new\n')
         e.stdin.write('post\n')
 
-        # Todo: Use TC from parameter.
-        e.stdin.write('level 0 0:15 0.1\n')
+        # Send level command.
+        min, sec = divmod(btms//1000, 60)
+        incsec = incms/1000
+        e.stdin.write(f'level 0 {min}:{sec} {incsec}\n')
+        print(f'level 0 {min}:{sec} {incsec}')
 
         e.stdin.write(f'setboard {fen}\n')
 
@@ -91,20 +98,18 @@ def match(e1, e2, fen, param, output_game_file, movetimems=100):
     start_turn = turn(fen)
     gres, e1score = '', 0.0
 
-    # Todo: Calculate remaining time from each engine.
-    mt = int(movetimems/10)
-
     # Start the match.
     # Todo: Reverse starting side on same fen.
     while True:
+        # Todo: Calculate time remaining
 
         if num == 0:
-            eng[side].stdin.write(f'time {mt}\n')
-            eng[side].stdin.write(f'otim {mt}\n')
+            eng[side].stdin.write(f'time {time_value}\n')
+            eng[side].stdin.write(f'otim {time_value}\n')
             eng[side].stdin.write('go\n')
         else:
-            eng[side].stdin.write(f'time {mt}\n')
-            eng[side].stdin.write(f'otim {mt}\n')
+            eng[side].stdin.write(f'time {time_value}\n')
+            eng[side].stdin.write(f'otim {time_value}\n')
             move_hist.append(move)
             eng[side].stdin.write(f'{move}\n')
 
@@ -180,6 +185,12 @@ def main():
                              'Example:\n'
                              '"QueenOp 800 500 1500 1000, RookOp ..."\n'
                              'parname value min max factor')
+    parser.add_argument('--tc-base-timems', required=False,
+                        help='base time in millisec, default=10000',
+                        type=int, default=10000)
+    parser.add_argument('--tc-inc-timems', required=False,
+                        help='increment in millisec, default=100',
+                        type=int, default=100)
 
     args = parser.parse_args()
 
@@ -206,7 +217,8 @@ def main():
     # Loop thru the fens and create a match.
     for i, fen in enumerate(fens):
         print(f'starting game {i+1} ...')
-        res = match(e1, e2, fen, param, output_game_file)
+        res = match(e1, e2, fen, param, output_game_file,
+                    btms=args.tc_base_timems, incms=args.tc_inc_timems)
         print(f'ended game {i + 1}')
         test_engine_score.append(res)
         if i >= num_games - 1:
