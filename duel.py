@@ -44,18 +44,12 @@ def save_game(outfn, fen, moves, e1, e2, start_turn, gres):
         f.write('\n\n')
 
 
-def match(e1, e2, fen, output_game_file, movetimems=100):
+def match(e1, e2, fen, param, output_game_file, movetimems=100):
     """
     Run an engine match between e1 and e2. Save the game and print result
     from e1 perspective.
-
-    :param e1: the test engine
-    :param e2: the base engine
-    :param fen: the startposition
-    :return: score of e1, can be 0.0 0.5 1.0
     """
     move_hist = []
-    opt = {'QueenValueOpening': 650}
 
     pe1 = subprocess.Popen(e1, stdin=subprocess.PIPE,
                            stdout=subprocess.PIPE,
@@ -69,7 +63,7 @@ def match(e1, e2, fen, output_game_file, movetimems=100):
 
     eng = [pe1, pe2]
 
-    for e in eng:
+    for i, e in enumerate(eng):
         e.stdin.write('xboard\n')
         e.stdin.write('protover\n')
         for eline in iter(e.stdout.readline, ''):
@@ -77,9 +71,11 @@ def match(e1, e2, fen, output_game_file, movetimems=100):
             if 'done=1' in line:
                 break
 
-        # Set option
-        for k, v in opt.items():
-            e.stdin.write(f'option {k}={v}\n')
+        # Set option to e1
+        if i == 0:
+            for k, v in param.items():
+                e.stdin.write(f'option {k}={v}\n')
+                print(f'set {k} to {v}')
 
     for e in eng:
         e.stdin.write('variant\n')
@@ -172,13 +168,18 @@ def main():
                         help='number of games to play in a match, default=2',
                         type=int, default=2)
     parser.add_argument('--test-engine', required=True,
-                        help='engine path/file or file of the engine '
+                        help='engine path/file or file of the engine\n'
                              'to be optmized')
     parser.add_argument('--base-engine', required=True,
-                        help='engine path/file or file of the engine '
+                        help='engine path/file or file of the engine\n'
                              'as opponent to test engine')
     parser.add_argument('--start-fen', required=True,
                         help='fen file of startpos for the match')
+    parser.add_argument('--param', required=True,
+                        help='parameters to be optimized\n'
+                             'Example:\n'
+                             '"QueenOp 800 500 1500 1000, RookOp ..."\n'
+                             'parname value min max factor')
 
     args = parser.parse_args()
 
@@ -186,6 +187,15 @@ def main():
     e1 = args.test_engine
     e2 = args.base_engine
     fen_file = args.start_fen
+
+    # Convert param to a dict
+    param = {}
+    for par in args.param.split(','):
+        par = par.strip()
+        sppar = par.split()  # Does not support param with space
+        spname = sppar[0].strip()
+        spvalue = int(sppar[1].strip())
+        param.update({spname: spvalue})
 
     fens = get_fen_list(fen_file)
     test_engine_score = []
@@ -196,7 +206,7 @@ def main():
     # Loop thru the fens and create a match.
     for i, fen in enumerate(fens):
         print(f'starting game {i+1} ...')
-        res = match(e1, e2, fen, output_game_file)
+        res = match(e1, e2, fen, param, output_game_file)
         print(f'ended game {i + 1}')
         test_engine_score.append(res)
         if i >= num_games - 1:
