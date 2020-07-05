@@ -52,6 +52,7 @@ def match(e1, e2, fen, param, output_game_file, btms=10000, incms=100):
     :btms: base time in ms
     :incms: increment time in ms
     """
+    adj_move_num = 30
     move_hist = []
     time_value = btms//100 + incms//100  # Convert ms to centisec
 
@@ -95,7 +96,7 @@ def match(e1, e2, fen, param, output_game_file, btms=10000, incms=100):
         e.stdin.write(f'setboard {fen}\n')
 
     num, side, move, line, game_end = 0, 0, None, '', False
-    start_turn = turn(fen)
+    score_history, start_turn = [], turn(fen)
     gres, e1score = '', 0.0
 
     # Start the match.
@@ -118,12 +119,12 @@ def match(e1, e2, fen, param, output_game_file, btms=10000, incms=100):
         for eline in iter(eng[side].stdout.readline, ''):
             line = eline.strip()
 
-            # print(line)
-            # sys.stdout.flush()
+            if not line.startswith('#'):
+                print(line)
 
-            # Todo: Add adjudication.
-            # if not line.startswith('# '):
-                # print(f'score: {line.split()[1]}')
+            # Save score from engine search info.
+            if line.split()[0].isdigit():
+                score = int(line.split()[1])  # cp
 
             # Check end of game as claimed by engines.
             # Todo: Refactor
@@ -148,8 +149,25 @@ def match(e1, e2, fen, param, output_game_file, btms=10000, incms=100):
                 gres = '1/2-1/2'
                 break
 
-            if 'move' in line:
+            if 'move ' in line and not line.startswith('#'):
                 move = line.split('move ')[1]
+                score_history.append(score)
+                break
+
+        # Adjudicate game by winning score
+        if len(score_history) >= adj_move_num:
+            fcp_score = score_history[0::2]
+            scp_score = score_history[1::2]
+
+            win_cnt, win_score = 0, 300
+            for i, (fs, ss) in enumerate(zip(reversed(fcp_score), reversed(scp_score))):
+                if i <= 2 and fs >= win_score and ss <= -win_score:
+                    win_cnt += 1
+                elif i <= 2 and fs <= -win_score and ss >= win_score:
+                    win_cnt += 1
+
+            if win_cnt >= 3:
+                gres = '1-0' if side else '0-1'
                 break
 
         if game_end:
