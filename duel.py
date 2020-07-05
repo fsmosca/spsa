@@ -52,7 +52,7 @@ def match(e1, e2, fen, param, output_game_file, btms=10000, incms=100):
     :btms: base time in ms
     :incms: increment time in ms
     """
-    adj_move_num = 30
+    win_adj_move_num, draw_adj_move_num = 40, 60
     move_hist = []
     time_value = btms//100 + incms//100  # Convert ms to centisec
 
@@ -155,25 +155,30 @@ def match(e1, e2, fen, param, output_game_file, btms=10000, incms=100):
                 break
 
         # Adjudicate game as win by winning score.
-        if len(score_history) >= adj_move_num:
+        if len(score_history) >= win_adj_move_num:
             fcp_score = score_history[0::2]
             scp_score = score_history[1::2]
 
-            win_cnt, win_score = 0, 300
+            fwin_cnt, swin_cnt, win_score = 0, 0, 300
             for i, (fs, ss) in enumerate(zip(reversed(fcp_score), reversed(scp_score))):
                 if i >= 3:
                     break
                 if i <= 2 and fs >= win_score and ss <= -win_score:
-                    win_cnt += 1
+                    fwin_cnt += 1
                 elif i <= 2 and fs <= -win_score and ss >= win_score:
-                    win_cnt += 1
+                    swin_cnt += 1
 
-            if win_cnt >= 3:
+            if fwin_cnt >= 3:
                 gres = '1-0' if side else '0-1'
+                e1score = 1.0
+                break
+            if swin_cnt >= 3:
+                gres = '1-0' if side else '0-1'
+                e1score = 0
                 break
 
             # Adjudicate game as draw if score is drawish.
-            if len(score_history) >= adj_move_num:
+            if len(score_history) >= draw_adj_move_num:
                 fcp_score = score_history[0::2]
                 scp_score = score_history[1::2]
 
@@ -186,6 +191,7 @@ def match(e1, e2, fen, param, output_game_file, btms=10000, incms=100):
 
                 if draw_cnt >= 3:
                     gres = '1/2-1/2'
+                    e1score = 0.5
                     break
 
         if game_end:
