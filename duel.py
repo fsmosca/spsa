@@ -116,7 +116,7 @@ def is_game_end(line, start_turn):
 
 
 def match(e1, e2, fen, test_param, output_game_file, btms=10000, incms=100,
-          num_games=2):
+          num_games=2, is_adjudicate_game=False):
     """
     Run an engine match between e1 and e2. Save the game and print result
     from e1 perspective.
@@ -221,7 +221,7 @@ def match(e1, e2, fen, test_param, output_game_file, btms=10000, incms=100,
             if game_end:
                 break
 
-            if False:
+            if is_adjudicate_game:
                 game_endr, gresr, e1scorer = adjudicate_win(
                     score_history, win_adj_move_num, side)
                 if not game_endr:
@@ -274,6 +274,8 @@ def main():
     parser.add_argument('--tc-inc-timems', required=False,
                         help='increment in millisec, default=100',
                         type=int, default=100)
+    parser.add_argument('--adjudicate', action='store_true',
+                        help='adjudicate the game')
 
     args = parser.parse_args()
 
@@ -300,7 +302,8 @@ def main():
     for i, fen in enumerate(fens):
         print(f'starting round {i+1} ...')
         res = match(e1, e2, fen, test_param, output_game_file,
-                    btms=args.tc_base_timems, incms=args.tc_inc_timems)
+                    btms=args.tc_base_timems, incms=args.tc_inc_timems,
+                    is_adjudicate_game=args.adjudicate)
         print(f'ended round {i + 1}')
         test_engine_score.append(res)
         if i >= args.round - 1:
