@@ -99,19 +99,15 @@ def adjudicate_draw(score_history, draw_adj_move_num):
 def is_game_end(line, start_turn):
     game_end, gres, e1score = False, '*', 0.0
 
-    if '1-0 {White mates}' in line:
+    if '1-0' in line:
         game_end = True
         e1score = 1.0 if start_turn else 0.0
         gres = '1-0'
-    elif '0-1 {Black mates}' in line:
+    elif '0-1' in line:
         game_end = True
         e1score = 0.0 if start_turn else 0.0
         gres = '0-1'
-    elif '{Draw by repetition}' in line:
-        game_end = True
-        e1score = 0.5
-        gres = '1/2-1/2'
-    elif '{Draw by fifty move rule}' in line:
+    elif '1/2-1/2' in line:
         game_end = True
         e1score = 0.5
         gres = '1/2-1/2'
@@ -181,6 +177,8 @@ def match(e1, e2, fen, test_param, output_game_file, btms=10000, incms=100,
         num, side, move, line, game_end = 0, 0, None, '', False
         score_history, start_turn = [], turn(fen)
         gres, e1score = '*', 0.0
+        name_color = ['test' if gn%2 == 0 and start_turn else 'base',
+                      'test' if gn%2 == 1 and start_turn else 'base']
 
         # Start the game.
         while True:
@@ -212,7 +210,7 @@ def match(e1, e2, fen, test_param, output_game_file, btms=10000, incms=100,
                 # Check end of game as claimed by engines.
                 game_endr, gresr, e1scorer = is_game_end(line, start_turn)
                 if game_endr:
-                    gres, e1score = gresr, e1scorer
+                    game_end, gres, e1score = game_endr, gresr, e1scorer
                     break
 
                 if 'move ' in line and not line.startswith('#'):
@@ -220,27 +218,27 @@ def match(e1, e2, fen, test_param, output_game_file, btms=10000, incms=100,
                     score_history.append(score)
                     break
 
-            game_endr, gresr, e1scorer = adjudicate_win(score_history,
-                                                     win_adj_move_num, side)
-
-            if not game_endr:
-                game_endr, gresr, e1scorer = adjudicate_draw(score_history,
-                                                             draw_adj_move_num)
-
-            if game_endr:
-                gres, e1score = gresr, e1scorer
-                break
-
             if game_end:
                 break
 
+            if False:
+                game_endr, gresr, e1scorer = adjudicate_win(
+                    score_history, win_adj_move_num, side)
+                if not game_endr:
+                    game_endr, gresr, e1scorer = adjudicate_draw(
+                        score_history, draw_adj_move_num)
+                if game_endr:
+                    gres, e1score = gresr, e1scorer
+                    print('Game ends by adjudication')
+                    break
+
             side = not side
 
-        save_game(output_game_file, fen, move_hist, 'e1', 'e2', start_turn, gres)
+        save_game(output_game_file, fen, move_hist, name_color[0],
+                  name_color[1], start_turn, gres)
 
         for e in eng:
             e.stdin.write('quit\n')
-            print(f'Quit {e}')
 
         print(e1score)
         all_e1score += e1score
