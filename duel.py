@@ -119,7 +119,7 @@ def is_game_end(line, start_turn):
     return game_end, gres, e1score
 
 
-def match(e1, e2, fen, param, output_game_file, btms=10000, incms=100,
+def match(e1, e2, fen, test_param, output_game_file, btms=10000, incms=100,
           num_games=2):
     """
     Run an engine match between e1 and e2. Save the game and print result
@@ -161,7 +161,7 @@ def match(e1, e2, fen, param, output_game_file, btms=10000, incms=100,
 
             # Set option to e1
             if (i == 0 and gn % 2 == 0) or (i == 1 and gn % 2 == 1):
-                for k, v in param.items():
+                for k, v in test_param.items():
                     e.stdin.write(f'option {k}={v}\n')
                     print(f'set {k} to {v}')
 
@@ -265,7 +265,7 @@ def main():
                              'as opponent to test engine')
     parser.add_argument('--start-fen', required=True,
                         help='fen file of startpos for the match')
-    parser.add_argument('--param', required=True,
+    parser.add_argument('--test-param', required=True,
                         help='parameters to be optimized\n'
                              'Example:\n'
                              '"QueenOp 800 500 1500 1000, RookOp ..."\n'
@@ -284,13 +284,13 @@ def main():
     fen_file = args.start_fen
 
     # Convert param to a dict
-    param = {}
-    for par in args.param.split(','):
+    test_param = {}
+    for par in args.test_param.split(','):
         par = par.strip()
         sppar = par.split()  # Does not support param with space
         spname = sppar[0].strip()
         spvalue = int(sppar[1].strip())
-        param.update({spname: spvalue})
+        test_param.update({spname: spvalue})
 
     fens = get_fen_list(fen_file)
     test_engine_score = []
@@ -301,7 +301,7 @@ def main():
     # Loop thru the fens and create a match.
     for i, fen in enumerate(fens):
         print(f'starting round {i+1} ...')
-        res = match(e1, e2, fen, param, output_game_file,
+        res = match(e1, e2, fen, test_param, output_game_file,
                     btms=args.tc_base_timems, incms=args.tc_inc_timems)
         print(f'ended round {i + 1}')
         test_engine_score.append(res)
