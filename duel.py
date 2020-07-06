@@ -96,6 +96,29 @@ def adjudicate_draw(score_history, draw_adj_move_num):
     return ret, gres, e1score
 
 
+def is_game_end(line, start_turn):
+    game_end, gres, e1score = False, '*', 0.0
+
+    if '1-0 {White mates}' in line:
+        game_end = True
+        e1score = 1.0 if start_turn else 0.0
+        gres = '1-0'
+    elif '0-1 {Black mates}' in line:
+        game_end = True
+        e1score = 0.0 if start_turn else 0.0
+        gres = '0-1'
+    elif '{Draw by repetition}' in line:
+        game_end = True
+        e1score = 0.5
+        gres = '1/2-1/2'
+    elif '{Draw by fifty move rule}' in line:
+        game_end = True
+        e1score = 0.5
+        gres = '1/2-1/2'
+
+    return game_end, gres, e1score
+
+
 def match(e1, e2, fen, param, output_game_file, btms=10000, incms=100,
           num_games=2):
     """
@@ -105,13 +128,12 @@ def match(e1, e2, fen, param, output_game_file, btms=10000, incms=100,
     :btms: base time in ms
     :incms: increment time in ms
     """
-    num_games = 2
     win_adj_move_num, draw_adj_move_num = 40, 60
     move_hist = []
     time_value = btms//100 + incms//100  # Convert ms to centisec
     all_e1score = 0.0
 
-    # Reverse start color of engine.
+    # Start engine match, 2 games will be played.
     for gn in range(num_games):
 
         pe1 = subprocess.Popen(e1, stdin=subprocess.PIPE,
@@ -160,7 +182,7 @@ def match(e1, e2, fen, param, output_game_file, btms=10000, incms=100,
         score_history, start_turn = [], turn(fen)
         gres, e1score = '*', 0.0
 
-        # Start the match.
+        # Start the game.
         while True:
             # Todo: Calculate time remaining
 
@@ -188,26 +210,9 @@ def match(e1, e2, fen, param, output_game_file, btms=10000, incms=100,
                     score = int(line.split()[1])  # cp
 
                 # Check end of game as claimed by engines.
-                # Todo: Refactor
-                if '1-0 {White mates}' in line:
-                    game_end = True
-                    e1score = 1.0 if start_turn else 0.0
-                    gres = '1-0'
-                    break
-                elif '0-1 {Black mates}' in line:
-                    game_end = True
-                    e1score = 0.0 if start_turn else 0.0
-                    gres = '0-1'
-                    break
-                elif '{Draw by repetition}' in line:
-                    game_end = True
-                    e1score = 0.5
-                    gres = '1/2-1/2'
-                    break
-                elif '{Draw by fifty move rule}' in line:
-                    game_end = True
-                    e1score = 0.5
-                    gres = '1/2-1/2'
+                game_endr, gresr, e1scorer = is_game_end(line, start_turn)
+                if game_endr:
+                    gres, e1score = gresr, e1scorer
                     break
 
                 if 'move ' in line and not line.startswith('#'):
@@ -223,8 +228,7 @@ def match(e1, e2, fen, param, output_game_file, btms=10000, incms=100,
                                                              draw_adj_move_num)
 
             if game_endr:
-                gres = gresr
-                e1score = e1scorer
+                gres, e1score = gresr, e1scorer
                 break
 
             if game_end:
@@ -296,10 +300,10 @@ def main():
 
     # Loop thru the fens and create a match.
     for i, fen in enumerate(fens):
-        print(f'starting game {i+1} ...')
+        print(f'starting round {i+1} ...')
         res = match(e1, e2, fen, param, output_game_file,
                     btms=args.tc_base_timems, incms=args.tc_inc_timems)
-        print(f'ended game {i + 1}')
+        print(f'ended round {i + 1}')
         test_engine_score.append(res)
         if i >= args.round - 1:
             break
