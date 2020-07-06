@@ -44,6 +44,58 @@ def save_game(outfn, fen, moves, e1, e2, start_turn, gres):
         f.write('\n\n')
 
 
+def adjudicate_win(score_history, win_adj_move_num, side):
+    ret, gres, e1score = False, '*', 0.0
+
+    if len(score_history) >= win_adj_move_num:
+        fcp_score = score_history[0::2]
+        scp_score = score_history[1::2]
+
+        fwin_cnt, swin_cnt, win_score = 0, 0, 300
+        for i, (fs, ss) in enumerate(zip(reversed(fcp_score),
+                                         reversed(scp_score))):
+            if i >= 3:
+                break
+            if i <= 2 and fs >= win_score and ss <= -win_score:
+                fwin_cnt += 1
+            elif i <= 2 and fs <= -win_score and ss >= win_score:
+                swin_cnt += 1
+
+        if fwin_cnt >= 3:
+            gres = '1-0' if side else '0-1'
+            e1score = 1.0
+            ret = True
+        if swin_cnt >= 3:
+            gres = '1-0' if side else '0-1'
+            e1score = 0
+            ret = True
+
+    return ret, gres, e1score
+
+
+def adjudicate_draw(score_history, draw_adj_move_num):
+    ret, gres, e1score = False, '*', 0.0
+
+    if len(score_history) >= draw_adj_move_num:
+        fcp_score = score_history[0::2]
+        scp_score = score_history[1::2]
+
+        draw_cnt, draw_score = 0, 5
+        for i, (fs, ss) in enumerate(zip(reversed(fcp_score),
+                                         reversed(scp_score))):
+            if i >= 3:
+                break
+            if i <= 2 and abs(fs) <= draw_score and abs(ss) <= draw_score:
+                draw_cnt += 1
+
+        if draw_cnt >= 3:
+            gres = '1/2-1/2'
+            e1score = 0.5
+            ret = True
+
+    return ret, gres, e1score
+
+
 def match(e1, e2, fen, param, output_game_file, btms=10000, incms=100):
     """
     Run an engine match between e1 and e2. Save the game and print result
@@ -97,7 +149,7 @@ def match(e1, e2, fen, param, output_game_file, btms=10000, incms=100):
 
     num, side, move, line, game_end = 0, 0, None, '', False
     score_history, start_turn = [], turn(fen)
-    gres, e1score = '', 0.0
+    gres, e1score = '*', 0.0
 
     # Start the match.
     # Todo: Reverse starting side on same fen.
@@ -154,45 +206,17 @@ def match(e1, e2, fen, param, output_game_file, btms=10000, incms=100):
                 score_history.append(score)
                 break
 
-        # Adjudicate game as win by winning score.
-        if len(score_history) >= win_adj_move_num:
-            fcp_score = score_history[0::2]
-            scp_score = score_history[1::2]
+        game_endr, gresr, e1scorer = adjudicate_win(score_history,
+                                                 win_adj_move_num, side)
 
-            fwin_cnt, swin_cnt, win_score = 0, 0, 300
-            for i, (fs, ss) in enumerate(zip(reversed(fcp_score), reversed(scp_score))):
-                if i >= 3:
-                    break
-                if i <= 2 and fs >= win_score and ss <= -win_score:
-                    fwin_cnt += 1
-                elif i <= 2 and fs <= -win_score and ss >= win_score:
-                    swin_cnt += 1
+        if not game_endr:
+            game_endr, gresr, e1scorer = adjudicate_draw(score_history,
+                                                         draw_adj_move_num)
 
-            if fwin_cnt >= 3:
-                gres = '1-0' if side else '0-1'
-                e1score = 1.0
-                break
-            if swin_cnt >= 3:
-                gres = '1-0' if side else '0-1'
-                e1score = 0
-                break
-
-            # Adjudicate game as draw if score is drawish.
-            if len(score_history) >= draw_adj_move_num:
-                fcp_score = score_history[0::2]
-                scp_score = score_history[1::2]
-
-                draw_cnt, draw_score = 0, 5
-                for i, (fs, ss) in enumerate(zip(reversed(fcp_score), reversed(scp_score))):
-                    if i >= 3:
-                        break
-                    if i <= 2 and abs(fs) <= draw_score and abs(ss) <= draw_score:
-                        draw_cnt += 1
-
-                if draw_cnt >= 3:
-                    gres = '1/2-1/2'
-                    e1score = 0.5
-                    break
+        if game_endr:
+            gres = gresr
+            e1score = e1scorer
+            break
 
         if game_end:
             break
