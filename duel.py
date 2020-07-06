@@ -96,7 +96,8 @@ def adjudicate_draw(score_history, draw_adj_move_num):
     return ret, gres, e1score
 
 
-def match(e1, e2, fen, param, output_game_file, btms=10000, incms=100):
+def match(e1, e2, fen, param, output_game_file, btms=10000, incms=100,
+          num_games=2):
     """
     Run an engine match between e1 and e2. Save the game and print result
     from e1 perspective.
@@ -104,132 +105,143 @@ def match(e1, e2, fen, param, output_game_file, btms=10000, incms=100):
     :btms: base time in ms
     :incms: increment time in ms
     """
+    num_games = 2
     win_adj_move_num, draw_adj_move_num = 40, 60
     move_hist = []
     time_value = btms//100 + incms//100  # Convert ms to centisec
+    all_e1score = 0.0
 
-    pe1 = subprocess.Popen(e1, stdin=subprocess.PIPE,
-                           stdout=subprocess.PIPE,
-                           stderr=subprocess.STDOUT,
-                           universal_newlines=True, bufsize=0)
+    # Reverse start color of engine.
+    for gn in range(num_games):
 
-    pe2 = subprocess.Popen(e2, stdin=subprocess.PIPE,
-                           stdout=subprocess.PIPE,
-                           stderr=subprocess.STDOUT,
-                           universal_newlines=True, bufsize=0)
+        pe1 = subprocess.Popen(e1, stdin=subprocess.PIPE,
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.STDOUT,
+                               universal_newlines=True, bufsize=0)
 
-    eng = [pe1, pe2]
+        pe2 = subprocess.Popen(e2, stdin=subprocess.PIPE,
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.STDOUT,
+                               universal_newlines=True, bufsize=0)
 
-    for i, e in enumerate(eng):
-        e.stdin.write('xboard\n')
-        e.stdin.write('protover\n')
-        for eline in iter(e.stdout.readline, ''):
-            line = eline.strip()
-            if 'done=1' in line:
-                break
-
-        # Set option to e1
-        if i == 0:
-            for k, v in param.items():
-                e.stdin.write(f'option {k}={v}\n')
-                print(f'set {k} to {v}')
-
-    for e in eng:
-        e.stdin.write('variant\n')
-        e.stdin.write('new\n')
-        e.stdin.write('post\n')
-
-        # Send level command.
-        min, sec = divmod(btms//1000, 60)
-        incsec = incms/1000
-        e.stdin.write(f'level 0 {min}:{sec} {incsec}\n')
-        print(f'level 0 {min}:{sec} {incsec}')
-
-        e.stdin.write(f'setboard {fen}\n')
-
-    num, side, move, line, game_end = 0, 0, None, '', False
-    score_history, start_turn = [], turn(fen)
-    gres, e1score = '*', 0.0
-
-    # Start the match.
-    # Todo: Reverse starting side on same fen.
-    while True:
-        # Todo: Calculate time remaining
-
-        if num == 0:
-            eng[side].stdin.write(f'time {time_value}\n')
-            eng[side].stdin.write(f'otim {time_value}\n')
-            eng[side].stdin.write('go\n')
+        if gn % 2 == 0:
+            eng = [pe1, pe2]
         else:
-            eng[side].stdin.write(f'time {time_value}\n')
-            eng[side].stdin.write(f'otim {time_value}\n')
-            move_hist.append(move)
-            eng[side].stdin.write(f'{move}\n')
+            eng = [pe2, pe1]
 
-        num += 1
+        for i, e in enumerate(eng):
+            e.stdin.write('xboard\n')
+            e.stdin.write('protover\n')
+            for eline in iter(e.stdout.readline, ''):
+                line = eline.strip()
+                if 'done=1' in line:
+                    break
 
-        for eline in iter(eng[side].stdout.readline, ''):
-            line = eline.strip()
+            # Set option to e1
+            if (i == 0 and gn % 2 == 0) or (i == 1 and gn % 2 == 1):
+                for k, v in param.items():
+                    e.stdin.write(f'option {k}={v}\n')
+                    print(f'set {k} to {v}')
 
-            if not line.startswith('#'):
-                print(line)
+        for e in eng:
+            e.stdin.write('variant\n')
+            e.stdin.write('new\n')
+            e.stdin.write('post\n')
 
-            # Save score from engine search info.
-            if line.split()[0].isdigit():
-                score = int(line.split()[1])  # cp
+            # Send level command.
+            min, sec = divmod(btms//1000, 60)
+            incsec = incms/1000
+            e.stdin.write(f'level 0 {min}:{sec} {incsec}\n')
+            print(f'level 0 {min}:{sec} {incsec}')
 
-            # Check end of game as claimed by engines.
-            # Todo: Refactor
-            if '1-0 {White mates}' in line:
-                game_end = True
-                e1score = 1.0 if start_turn else 0.0
-                gres = '1-0'
+            e.stdin.write(f'setboard {fen}\n')
+
+        num, side, move, line, game_end = 0, 0, None, '', False
+        score_history, start_turn = [], turn(fen)
+        gres, e1score = '*', 0.0
+
+        # Start the match.
+        while True:
+            # Todo: Calculate time remaining
+
+            if num == 0:
+                eng[side].stdin.write(f'time {time_value}\n')
+                eng[side].stdin.write(f'otim {time_value}\n')
+                eng[side].stdin.write('go\n')
+            else:
+                eng[side].stdin.write(f'time {time_value}\n')
+                eng[side].stdin.write(f'otim {time_value}\n')
+                move_hist.append(move)
+                eng[side].stdin.write(f'{move}\n')
+
+            num += 1
+
+            for eline in iter(eng[side].stdout.readline, ''):
+                line = eline.strip()
+
+                if False:
+                    if not line.startswith('#'):
+                        print(line)
+
+                # Save score from engine search info.
+                if line.split()[0].isdigit():
+                    score = int(line.split()[1])  # cp
+
+                # Check end of game as claimed by engines.
+                # Todo: Refactor
+                if '1-0 {White mates}' in line:
+                    game_end = True
+                    e1score = 1.0 if start_turn else 0.0
+                    gres = '1-0'
+                    break
+                elif '0-1 {Black mates}' in line:
+                    game_end = True
+                    e1score = 0.0 if start_turn else 0.0
+                    gres = '0-1'
+                    break
+                elif '{Draw by repetition}' in line:
+                    game_end = True
+                    e1score = 0.5
+                    gres = '1/2-1/2'
+                    break
+                elif '{Draw by fifty move rule}' in line:
+                    game_end = True
+                    e1score = 0.5
+                    gres = '1/2-1/2'
+                    break
+
+                if 'move ' in line and not line.startswith('#'):
+                    move = line.split('move ')[1]
+                    score_history.append(score)
+                    break
+
+            game_endr, gresr, e1scorer = adjudicate_win(score_history,
+                                                     win_adj_move_num, side)
+
+            if not game_endr:
+                game_endr, gresr, e1scorer = adjudicate_draw(score_history,
+                                                             draw_adj_move_num)
+
+            if game_endr:
+                gres = gresr
+                e1score = e1scorer
                 break
-            elif '0-1 {Black mates}' in line:
-                game_end = True
-                e1score = 0.0 if start_turn else 0.0
-                gres = '0-1'
-                break
-            elif '{Draw by repetition}' in line:
-                game_end = True
-                e1score = 0.5
-                gres = '1/2-1/2'
-                break
-            elif '{Draw by fifty move rule}' in line:
-                game_end = True
-                e1score = 0.5
-                gres = '1/2-1/2'
+
+            if game_end:
                 break
 
-            if 'move ' in line and not line.startswith('#'):
-                move = line.split('move ')[1]
-                score_history.append(score)
-                break
+            side = not side
 
-        game_endr, gresr, e1scorer = adjudicate_win(score_history,
-                                                 win_adj_move_num, side)
+        save_game(output_game_file, fen, move_hist, 'e1', 'e2', start_turn, gres)
 
-        if not game_endr:
-            game_endr, gresr, e1scorer = adjudicate_draw(score_history,
-                                                         draw_adj_move_num)
+        for e in eng:
+            e.stdin.write('quit\n')
+            print(f'Quit {e}')
 
-        if game_endr:
-            gres = gresr
-            e1score = e1scorer
-            break
+        print(e1score)
+        all_e1score += e1score
 
-        if game_end:
-            break
-
-        side = not side
-
-    save_game(output_game_file, fen, move_hist, 'e1', 'e2', start_turn, gres)
-
-    for e in eng:
-        e.stdin.write('quit\n')
-        e.stdin.write('quit\n')
-
-    return e1score
+    return all_e1score/num_games
 
 
 def main():
