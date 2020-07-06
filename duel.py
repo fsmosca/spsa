@@ -247,9 +247,12 @@ def match(e1, e2, fen, param, output_game_file, btms=10000, incms=100,
 def main():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument('--num-games', required=False,
-                        help='number of games to play in a match, default=2',
-                        type=int, default=2)
+    parser.add_argument('--round', required=False,
+                        help='number of rounds to play, default=1\n'
+                             'if round is 1, total games will be 2\n'
+                             'since each engine will play the start side\n'
+                             'of the start position',
+                        type=int, default=1)
     parser.add_argument('--test-engine', required=True,
                         help='engine path/file or file of the engine\n'
                              'to be optmized')
@@ -272,7 +275,6 @@ def main():
 
     args = parser.parse_args()
 
-    num_games = args.num_games
     e1 = args.test_engine
     e2 = args.base_engine
     fen_file = args.start_fen
@@ -299,7 +301,7 @@ def main():
                     btms=args.tc_base_timems, incms=args.tc_inc_timems)
         print(f'ended game {i + 1}')
         test_engine_score.append(res)
-        if i >= num_games - 1:
+        if i >= args.round - 1:
             break
 
     # The match is done, print score perf of test engine.
