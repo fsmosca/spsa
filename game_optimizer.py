@@ -298,11 +298,11 @@ if __name__ == "__main__":
                         help='input iteration, default=10000',
                         type=int, default=10000)
     parser.add_argument('--stop-all-mean-goal', required=False,
-                        help='input mean goal to stop the optimizer, default=-0.95',
-                        type=float, default=-0.95)
+                        help='input mean goal to stop the optimizer, default=-0.99',
+                        type=float, default=-0.99)
     parser.add_argument('--stop-best-mean-goal', required=False,
-                        help='input best mean goal to stop the optimizer, default=-0.95',
-                        type=float, default=-0.95)
+                        help='input best mean goal to stop the optimizer, default=-0.99',
+                        type=float, default=-0.99)
     parser.add_argument('--stop-min-iter', required=False,
                         help='input min iteration to stop the optimizer when\n'
                              'the mean goal condition is meet, default=10000',
