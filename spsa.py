@@ -130,6 +130,7 @@ class SPSA_minimization:
 
         k = 0
         theta = self.theta0
+        old_theta = copy.deepcopy(self.theta0)
 
         while True:
             k = k + 1
@@ -148,6 +149,10 @@ class SPSA_minimization:
             for name, value in theta_update.items():
                 print(f'  {name}: {value["value"]}')
 
+            old_theta_update = copy.deepcopy(old_theta)
+            for name, value in old_theta.items():
+                old_theta_update[name]['value'] = int(value['value'] * value['factor'])
+
             c_k = self.c / (k ** self.gamma)
             a_k = self.a / ((k + self.A) ** self.alpha)
 
@@ -156,15 +161,19 @@ class SPSA_minimization:
 
             # Run the engine match here to get the gradient
             print(f'Run engine match ...')
-            gradient = self.approximate_gradient(theta, c_k, k)
+            gradient = self.approximate_gradient(theta, old_theta, c_k, k)
+
+            # Backup theta for base_engine for next iteration. The current
+            # theta will be updated in the next iteration.
+            old_theta = copy.deepcopy(theta)
 
             # For SPSA we update with a small step (theta = theta - a_k * gradient)
             if is_spsa:
                 theta = utils.linear_combinaison(1.0, theta, -a_k, gradient)
                 logging.info(f'{__file__} > theta from spsa: {theta}')
-                print(f'new param after application of gradient:')
-                for n, v in theta.items():
-                    print(f'  {n}: {int(v["value"] * v["factor"])}')
+                # print(f'new param after application of gradient:')
+                # for n, v in theta.items():
+                #     print(f'  {n}: {int(v["value"] * v["factor"])}')
 
             # For steepest descent we update via a constant small step in the gradient direction
             elif is_steep_descent:
@@ -178,9 +187,9 @@ class SPSA_minimization:
             # Apply parameter limits
             theta = utils.apply_limits(theta)
             logging.info(f'{__file__} > theta with limits: {theta}')
-            print(f'new param after application of limits:')
-            for n, v in theta.items():
-                print(f'  {n}: {int(v["value"] * v["factor"])}')
+            # print(f'new param after application of limits:')
+            # for n, v in theta.items():
+            #     print(f'  {n}: {int(v["value"] * v["factor"])}')
 
             # We then move to the point which gives the best average of goal
             (avg_goal, avg_theta) = self.average_best_evals(30)
@@ -188,16 +197,16 @@ class SPSA_minimization:
 
             theta = utils.linear_combinaison(0.98, theta, 0.02, avg_theta)
             logging.info(f'{__file__} > theta with avg_theta: {theta}')
-            print(f'new param after application of best average param:')
-            for n, v in theta.items():
-                print(f'  {n}: {int(v["value"] * v["factor"])}')
+            # print(f'new param after application of best average param:')
+            # for n, v in theta.items():
+            #     print(f'  {n}: {int(v["value"] * v["factor"])}')
 
             # Apply parameter limits
             theta = utils.apply_limits(theta)  # This is the best param.
             logging.info(f'{__file__} > best param: {theta}')
-            print(f'new param after application of limits:')
-            for n, v in theta.items():
-                print(f'  {n}: {int(v["value"] * v["factor"])}')
+            # print(f'new param after application of limits:')
+            # for n, v in theta.items():
+            #     print(f'  {n}: {int(v["value"] * v["factor"])}')
 
             # Log best param values
             for kv, vv in theta.items():
@@ -260,7 +269,7 @@ class SPSA_minimization:
 
         return utils.true_param(theta)
 
-    def evaluate_goal(self, theta, i, res, iter):
+    def evaluate_goal(self, theta, old_theta, i, res, iter):
         """
         Return the evaluation of the goal function f at point theta.
         Note: The return value is already inverted. Example after the engine
@@ -273,7 +282,9 @@ class SPSA_minimization:
         progress of our minimization algorithm.
         """
 
-        v = self.f(i, **theta)
+        base_theta = utils.true_param(old_theta)
+
+        v = self.f(i, base_theta, **theta)
 
         # Store the value in history. This is only stored if iter is below
         # iter_parallel_start, otherwise we store the history after the
@@ -288,7 +299,7 @@ class SPSA_minimization:
 
         res[i] = v  # Run matches in parallel
 
-    def approximate_gradient(self, theta, c, iter):
+    def approximate_gradient(self, theta, old_theta, c, iter):
         """
         Return an approximation of the gradient of f at point theta.
 
@@ -306,7 +317,7 @@ class SPSA_minimization:
         logging.info(f'{__file__} > current_goal: {current_goal}')
 
         print(f'current optimizer mean goal: {current_goal:0.5f} (low is better, lowest: -1.0, highest: 1.0)')
-        print(f'Sample, optimizer goal = -(engine match score) or -(3.0 pts/4 games) or -0.75')
+        # print(f'Sample, optimizer goal = -(engine match score) or -(3.0 pts/4 games) or -0.75')
 
         bernouilli = self.create_bernouilli(theta)
 
@@ -348,24 +359,32 @@ class SPSA_minimization:
             if iter < self.iter_parallel_start:
                 print('Run match 1 ...')
                 true_param = utils.true_param(theta1)
-                print('param to use:')
+                print('test_engine param:')
                 for (name, val), (name1, val1) in zip(true_param.items(), true_theta.items()):
-                    print(f'  {name}: {val["value"]}, delta applied: {val["value"] - val1["value"]:+}')
+                    print(f'  {name}: {val["value"]}, ({val["value"] - val1["value"]:+})')
+
+                print('base_engine param:')
+                for name, val in utils.true_param(old_theta).items():
+                    print(f'  {name}: {val["value"]}')
 
                 t1 = time.perf_counter()
-                f1 = self.evaluate_goal(theta1, 0, res, iter)
+                f1 = self.evaluate_goal(theta1, old_theta, 0, res, iter)
                 logging.info(f'f1 elapse: {time.perf_counter() - t1:0.2f}s')
                 print(f'Done match 1!, elapse: {time.perf_counter() - t1:0.2f}sec')
 
                 # Run match 2
                 print('Run match 2 ...')
                 true_param = utils.true_param(theta2)
-                print('param to use:')
+                print('test_engine param:')
                 for (name, val), (name1, val1) in zip(true_param.items(), true_theta.items()):
-                    print(f'  {name}: {val["value"]}, delta applied: {val["value"] - val1["value"]:+}')
+                    print(f'  {name}: {val["value"]}, ({val["value"] - val1["value"]:+})')
+
+                print('base_engine param:')
+                for name, val in utils.true_param(old_theta).items():
+                    print(f'  {name}: {val["value"]}')
 
                 t1 = time.perf_counter()
-                f2 = self.evaluate_goal(theta2, 1, res, iter)
+                f2 = self.evaluate_goal(theta2, old_theta, 1, res, iter)
                 logging.info(f'f2 elapse: {time.perf_counter() - t1:0.2f}s')
                 print(f'Done match 2!, elapse: {time.perf_counter() - t1:0.2f}sec')
 
@@ -376,11 +395,17 @@ class SPSA_minimization:
                 jobs = []
                 for i in range(2):
                     print(f'Run match {i + 1} ...')
+
                     true_param = utils.true_param(thetas[i])
-                    print('param to use:')
+                    print('test_engine param:')
                     for (name, val), (name1, val1) in zip(true_param.items(), true_theta.items()):
-                        print(f'  {name}: {val["value"]}, delta applied: {val["value"] - val1["value"]:+}')
-                    p = multiprocessing.Process(target=self.evaluate_goal, args=(thetas[i], i, res, iter))
+                        print(f'  {name}: {val["value"]}, ({val["value"] - val1["value"]:+})')
+
+                    print('base_engine param:')
+                    for name, val in utils.true_param(old_theta).items():
+                        print(f'  {name}: {val["value"]}')
+
+                    p = multiprocessing.Process(target=self.evaluate_goal, args=(thetas[i], old_theta, i, res, iter))
                     jobs.append(p)
                     p.start()
 
@@ -418,18 +443,18 @@ class SPSA_minimization:
 
         # Update the gradient
         gradient = copy.deepcopy(theta)
-        print(f'Basic gradient after 2 engine matches:')
-        for (name, value) in theta.items():
+        # print(f'Basic gradient after 2 engine matches:')
+        for name, value in theta.items():
             gradient[name]['value'] = (f1 - f2) / (2.0 * c * bernouilli[name]['value'])
-            print(f'  {name}: {gradient[name]["value"]}')
+            # print(f'  {name}: {gradient[name]["value"]}')
             logging.info(f'{__file__} > {name} gradient: {gradient}')
 
         if (f1 > current_goal) and (f2 > current_goal):
             logging.info(f'{__file__} > function seems not decreasing')
             gradient = utils.linear_combinaison(0.1, gradient)
 
-            print('Modify the gradient because the result of engine matches\n'
-                  'when using the new param did not improve, but we will not\n'
+            print('Modify the gradient because the results of engine matches\n'
+                  'did not improve when using the new param. But we will not\n'
                   're-run the engine matches.')
 
             print('Modified gradient at alpha=0.1:')
@@ -445,9 +470,9 @@ class SPSA_minimization:
         gradient = utils.linear_combinaison((1 - beta), gradient, beta, self.previous_gradient)
         gradient = utils.linear_combinaison(correction, gradient)
 
-        print('New gradient after applying correction:')
-        for n, v in gradient.items():
-            print(f'  {n}: {v["value"]}')
+        # print('New gradient after applying correction:')
+        # for n, v in gradient.items():
+        #     print(f'  {n}: {v["value"]}')
 
         # Store the current gradient for the next time, to calculate the running average
         self.previous_gradient = gradient
