@@ -64,7 +64,7 @@ class game_optimizer:
         # Store the command name
         self.ENGINE_COMMAND = command
 
-    def launch_engine(self, theta):
+    def launch_engine(self, base_theta, theta):
         """
         Launch the match of the engine with parameters theta
         """
@@ -91,7 +91,16 @@ class game_optimizer:
             else:
                 new_param += '"'
 
-        match_command = f'{command} {args} --param {new_param}'
+        base_param, cnt = '"', 0
+        for name, value in base_theta.items():
+            cnt += 1
+            base_param += f'{name} {value["value"]} {value["min"]} {value["max"]} {value["factor"]}'
+            if cnt < len(theta):
+                base_param += ', '
+            else:
+                base_param += '"'
+
+        match_command = f'{command} {args} --test-param {new_param} --base-param {base_param}'
         logging.info(f'{__file__} > match_command: {match_command}')
 
         # We use a subprocess to launch the match
@@ -104,7 +113,7 @@ class game_optimizer:
         # Return the score of the match.
         return float(output)
 
-    def goal_function(self, i, **args):
+    def goal_function(self, i, base_theta, **args):
         """
         This is the function that the class exports, and that can be plugged
         into the generic SPSA minimizer.
@@ -133,7 +142,7 @@ class game_optimizer:
             param[k]['value'] = int(param[k]['value'] * v['factor'])
         logging.info(f'{__file__} > new param for test engine: {param}')
 
-        score = self.launch_engine(param)
+        score = self.launch_engine(base_theta, param)
         logging.info(f'{__file__} > match score: {score}')
 
         result = -score + regularization
@@ -315,7 +324,6 @@ if __name__ == "__main__":
     optimizer = game_optimizer('optimizer_setting.yml')
 
     # Define fcp and scp, these are engines info for a game match.
-    # This will be used in launch_engine().
     optimizer.get_engines_info()
 
     optimizer.get_parameter_to_optimize()
@@ -325,7 +333,7 @@ if __name__ == "__main__":
     # Set the name of the script to run matches
     optimizer.set_engine_command("python chess_match.py")
 
-    print(f'\nparameters to optimize = {optimizer.param}')
+    print(f'\nparameters to be optimized = {optimizer.param}')
     theta0 = optimizer.set_parameters_from_string(optimizer.param)
 
     # Apply factor to the value before sending to optimizer
