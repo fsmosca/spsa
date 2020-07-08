@@ -72,7 +72,7 @@ def main():
                         help='cutechess-cli options')
     parser.add_argument('--cutechess-cli-engine-options', required=True,
                         help='cutechess-cli engine options')
-    parser.add_argument('--param', required=True,
+    parser.add_argument('--test-param', required=True,
                         help='parameters to be optimized.\n'
                         'Example "QueenValueOp 800 500 1500 1000, RookValueOp ..."')
     parser.add_argument('--base-param', required=True,
@@ -97,7 +97,7 @@ def main():
     # Parse the parameters that should be optimized
     # --param "q 800 500 1200 1000, r 450 400 600 1000"
     # q value min max factor, r value min max factor
-    for par in args.param.split(','):
+    for par in args.test_param.split(','):
         par = par.strip()
         sppar = par.split()  # Does not support param with space
         spname = sppar[0].strip()
