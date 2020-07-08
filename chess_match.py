@@ -75,6 +75,9 @@ def main():
     parser.add_argument('--param', required=True,
                         help='parameters to be optimized.\n'
                         'Example "QueenValueOp 800 500 1500 1000, RookValueOp ..."')
+    parser.add_argument('--base-param', required=True,
+                        help='parameters for base_engine.\n'
+                             'Example "QueenValueOp 800 500 1500 1000, RookValueOp ..."')
 
     args = parser.parse_args()
     cutechess_cli_path = args.cutechess_cli_path.rstrip()
@@ -100,6 +103,14 @@ def main():
         spname = sppar[0].strip()
         spvalue = int(sppar[1].strip())
         fcp += f' option.{spname}={spvalue} '
+
+    # Parse parameters for base engine
+    for par in args.base_param.split(','):
+        par = par.strip()
+        sppar = par.split()  # Does not support param with space
+        spname = sppar[0].strip()
+        spvalue = int(sppar[1].strip())
+        scp += f' option.{spname}={spvalue} '
 
     # Run optimizer at the folder where game_optimizer.py is located.
     command = f'{cutechess_cli_path} {cutechess_cli_options} -srand {seed} '
