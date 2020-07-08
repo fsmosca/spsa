@@ -130,7 +130,6 @@ class SPSA_minimization:
 
         k = 0
         theta = self.theta0
-        old_theta = copy.deepcopy(self.theta0)
 
         while True:
             k = k + 1
@@ -141,17 +140,9 @@ class SPSA_minimization:
             if self.constraints is not None:
                 theta = self.constraints(theta)
 
-            theta_update = copy.deepcopy(theta)
-            for name, value in theta.items():
-                theta_update[name]['value'] = int(value['value'] * value['factor'])
-
-            print(f'current param:')
-            for name, value in theta_update.items():
+            print('current param:')
+            for name, value in utils.true_param(theta).items():
                 print(f'  {name}: {value["value"]}')
-
-            old_theta_update = copy.deepcopy(old_theta)
-            for name, value in old_theta.items():
-                old_theta_update[name]['value'] = int(value['value'] * value['factor'])
 
             c_k = self.c / (k ** self.gamma)
             a_k = self.a / ((k + self.A) ** self.alpha)
@@ -160,12 +151,8 @@ class SPSA_minimization:
             # print(f'  ak: {a_k:0.5f}')
 
             # Run the engine match here to get the gradient
-            print(f'Run engine match ...')
-            gradient = self.approximate_gradient(theta, old_theta, c_k, k)
-
-            # Backup theta for base_engine for next iteration. The current
-            # theta will be updated in the next iteration.
-            old_theta = copy.deepcopy(theta)
+            print('Run engine match ...')
+            gradient = self.approximate_gradient(theta, c_k, k)
 
             # For SPSA we update with a small step (theta = theta - a_k * gradient)
             if is_spsa:
@@ -299,7 +286,7 @@ class SPSA_minimization:
 
         res[i] = v  # Run matches in parallel
 
-    def approximate_gradient(self, theta, old_theta, c, iter):
+    def approximate_gradient(self, theta, c, iter):
         """
         Return an approximation of the gradient of f at point theta.
 
@@ -364,13 +351,14 @@ class SPSA_minimization:
                     print(f'  {name}: {val["value"]}, ({val["value"] - val1["value"]:+})')
 
                 print('base_engine param:')
-                for name, val in utils.true_param(old_theta).items():
+                for name, val in utils.true_param(theta).items():
                     print(f'  {name}: {val["value"]}')
 
                 t1 = time.perf_counter()
-                f1 = self.evaluate_goal(theta1, old_theta, 0, res, iter)
+                f1 = self.evaluate_goal(theta1, theta, 0, res, iter)
                 logging.info(f'f1 elapse: {time.perf_counter() - t1:0.2f}s')
                 print(f'Done match 1!, elapse: {time.perf_counter() - t1:0.2f}sec')
+                print(f'goal after match 1: {f1:0.5f}')
 
                 # Run match 2
                 print('Run match 2 ...')
@@ -380,15 +368,16 @@ class SPSA_minimization:
                     print(f'  {name}: {val["value"]}, ({val["value"] - val1["value"]:+})')
 
                 print('base_engine param:')
-                for name, val in utils.true_param(old_theta).items():
+                for name, val in utils.true_param(theta).items():
                     print(f'  {name}: {val["value"]}')
 
                 t1 = time.perf_counter()
-                f2 = self.evaluate_goal(theta2, old_theta, 1, res, iter)
+                f2 = self.evaluate_goal(theta2, theta, 1, res, iter)
                 logging.info(f'f2 elapse: {time.perf_counter() - t1:0.2f}s')
                 print(f'Done match 2!, elapse: {time.perf_counter() - t1:0.2f}sec')
+                print(f'goal after match 2: {f2:0.5f}')
 
-                print(f'Done engine match!')
+                print('Done engine match!')
             else:
                 print('Run 2 matches in parallel ...')
                 t1 = time.perf_counter()
@@ -402,10 +391,10 @@ class SPSA_minimization:
                         print(f'  {name}: {val["value"]}, ({val["value"] - val1["value"]:+})')
 
                     print('base_engine param:')
-                    for name, val in utils.true_param(old_theta).items():
+                    for name, val in utils.true_param(theta).items():
                         print(f'  {name}: {val["value"]}')
 
-                    p = multiprocessing.Process(target=self.evaluate_goal, args=(thetas[i], old_theta, i, res, iter))
+                    p = multiprocessing.Process(target=self.evaluate_goal, args=(thetas[i], theta, i, res, iter))
                     jobs.append(p)
                     p.start()
 
@@ -421,7 +410,7 @@ class SPSA_minimization:
 
                 logging.info(f'parallel elapse: {time.perf_counter() - t1:0.2f}s')
 
-                print(f'Done engine match!')
+                print('Done engine match!')
 
                 f1, f2 = res.values()[0], res.values()[1]
 
@@ -432,7 +421,7 @@ class SPSA_minimization:
             if f1 != f2:
                 break
 
-            print(f'perf is the same in match 1 and 2, launch new matches ...')
+            print('perf is the same in match 1 and 2, launch new matches ...')
 
             count = count + 1
             logging.info(f'{__file__} > f1 and f2 are the same, try the engine match again. num_tries = {count}')
