@@ -24,13 +24,17 @@
 		
 		<p>
 		There are 2 engines involved, the test_engine and the base_engine. In every iteration an engine
-		matches will be conducted. The test_engine will take the suggested parameter values from the tuner
-		and use it to play against the base_engine. The base_engine will use the parameter values used by
-		test_engine from the previous iteration.</p>
+		matches will be conducted. The base_engine will take the suggested parameter values from the tuner
+		and use it to play against the test_engine engine. The test_engine will use the parameter values
+		in the match after perturbation values are applied. <br><br>
+		
+		base_engine (tuner_param) vs test_engine (tuner_param + perturbation value)<br>
+		base_engine (tuner_param) vs test_engine (tuner_param - perturbation value)</p>
 		
 		<p>Two matches will be conducted in every iteration to approximate the gradient and
 		there are 8 games per match for a total of 16 games. It is better to have more games per match
-		so that the tuner can give a good approximation of the parameter values to try.</p>
+		so that the tuner can give a good approximation of the parameter values to try. The
+		time control used in this tuning match is 5s base time + 50ms increment with adjudication.</p>
 		
 		<h4>Parameters to be tuned</h4>
 		<p>Units are in centipawn, at the start queens are undervalued, rooks are overvalued,
@@ -45,7 +49,36 @@
 			<li>KnightValueOp 400</li>
 			<li>KnightValueEn 400</li>
 		</ul>
-		<p>Here is a <a href="param_8.html", target=_blank>plot</a> of this optimization attempt.</p>
+		<p>Here is the <a href="param_8.html", target=_blank>plot</a> of this optimization attempt.</p>
+		
+		<h4>Tuning Results</h4>
+		
+		<p>I stopped the tuning at iteration 1000 although it was scheduled for 2000 iterations.
+		Here are the best param after iteration 1000.
+		<ul>
+			<li>QueenValueOp 947</li>
+			<li>QueenValueEn 942</li>
+			<li>RookValueOp 439</li>
+			<li>RookValueEn 655</li>
+			<li>BishopValueOp 398</li>
+			<li>BishopValueEn 287</li>
+			<li>KnightValueOp 250</li>
+			<li>KnightValueEn 335</li>
+		</ul>
+		</p>
+		
+		<h4>Actual game verification</h4>
+		
+		<p>Run a game match at TC 30s+100ms tuned uses the tuning results while untuned uses the initial piece values.
+		<pre>
+		Score of tuned vs untuned: 90 - 18 - 12  [0.800] 120
+		...      tuned playing White: 43 - 13 - 5  [0.746] 61
+		...      tuned playing Black: 47 - 5 - 7  [0.856] 59
+		...      White vs Black: 48 - 60 - 12  [0.450] 120
+		Elo difference: 240.8 +/- 73.5, LOS: 100.0 %, DrawRatio: 10.0 %
+		</pre>
+		The engine that uses the optimized parameters wins gaing around 240 rating points.
+		</p>
 
 	</body>
 </html>
