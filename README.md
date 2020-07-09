@@ -3,6 +3,9 @@
 Optimizer for game coefficients using the SPSA algorithm.
 Author: Stéphane Nicolet
 
+Major change from the main repo
+* The base engine now takes the parameter values of test engine before perturbation values are applied.
+
 ### A. Installation
 * On windows
   * Install python 3.8 from https://www.python.org/downloads/  
