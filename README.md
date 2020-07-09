@@ -52,165 +52,127 @@ optional arguments:
 Python SPSA Parameter Optimizer 1.1
 ```
 
-#### Sample output from console
+#### Sample console output
 ```
-PS D:\github\spsa> python -u game_optimizer.py --iteration 500 --stop-min-iter 50 | tee testlog.txt                     
-parameters to optimize = QueenValueOp 650 550 750 100, QueenValueEn 650 550 750 100
+PS D:\github\spsa> python -u game_optimizer.py --iteration 2000 | tee testlog.txt
+
+parameters to be optimized = QueenValueOp 850 700 1100 200, QueenValueEn 850 700 1100 200, RookValueOp 600 400 700 200, RookValueEn 600 400 700 200, BishopValueOp 250 200 400 200, BishopValueEn 250 200 400 200, KnightValueOp 400 250 500 200, KnightValueEn 400 250 500 200
 starting iter 1 ...
 current param:
-  QueenValueOp: 650
-  QueenValueEn: 650
+  QueenValueOp: 850
+  QueenValueEn: 850
+  RookValueOp: 600
+  RookValueEn: 600
+  BishopValueOp: 250
+  BishopValueEn: 250
+  KnightValueOp: 400
+  KnightValueEn: 400
 Run engine match ...
 current optimizer mean goal: 1.00000 (low is better, lowest: -1.0, highest: 1.0)
-Sample, optimizer goal = -(engine match score) or -(3.0 pts/4 games) or -0.75
 Run match 1 ...
-param to use:
-  QueenValueOp: 640, delta applied: -10
-  QueenValueEn: 640, delta applied: -10
-Done match 1!, elapse: 26.99sec
+test_engine param:
+  QueenValueOp: 869, (+19)
+  QueenValueEn: 869, (+19)
+  RookValueOp: 620, (+20)
+  RookValueEn: 580, (-20)
+  BishopValueOp: 229, (-21)
+  BishopValueEn: 229, (-21)
+  KnightValueOp: 380, (-20)
+  KnightValueEn: 380, (-20)
+base_engine param:
+  QueenValueOp: 850
+  QueenValueEn: 850
+  RookValueOp: 600
+  RookValueEn: 600
+  BishopValueOp: 250
+  BishopValueEn: 250
+  KnightValueOp: 400
+  KnightValueEn: 400
+Done match 1!, elapse: 51.14sec
+goal after match 1: -0.55759
 Run match 2 ...
-param to use:
-  QueenValueOp: 660, delta applied: +10
-  QueenValueEn: 660, delta applied: +10
-Done match 2!, elapse: 25.01sec
+test_engine param:
+  QueenValueOp: 830, (-20)
+  QueenValueEn: 830, (-20)
+  RookValueOp: 580, (-20)
+  RookValueEn: 620, (+20)
+  BishopValueOp: 270, (+20)
+  BishopValueEn: 270, (+20)
+  KnightValueOp: 420, (+20)
+  KnightValueEn: 420, (+20)
+base_engine param:
+  QueenValueOp: 850
+  QueenValueEn: 850
+  RookValueOp: 600
+  RookValueEn: 600
+  BishopValueOp: 250
+  BishopValueEn: 250
+  KnightValueOp: 400
+  KnightValueEn: 400
+Done match 2!, elapse: 55.71sec
+goal after match 2: -0.55759
 Done engine match!
-optimizer goal after match 1: -0.62329 (low is better)
-optimizer goal after match 2: -0.62329 (low is better)
+optimizer goal after match 1: -0.55759 (low is better)
+optimizer goal after match 2: -0.55759 (low is better)
 perf is the same in match 1 and 2, launch new matches ...
 Run match 1 ...
-param to use:
-  QueenValueOp: 640, delta applied: -10
-  QueenValueEn: 640, delta applied: -10
-Done match 1!, elapse: 25.21sec
+test_engine param:
+  QueenValueOp: 869, (+19)
+  QueenValueEn: 869, (+19)
+  RookValueOp: 620, (+20)
+  RookValueEn: 580, (-20)
+  BishopValueOp: 229, (-21)
+  BishopValueEn: 229, (-21)
+  KnightValueOp: 380, (-20)
+  KnightValueEn: 380, (-20)
+base_engine param:
+  QueenValueOp: 850
+  QueenValueEn: 850
+  RookValueOp: 600
+  RookValueEn: 600
+  BishopValueOp: 250
+  BishopValueEn: 250
+  KnightValueOp: 400
+  KnightValueEn: 400
+Done match 1!, elapse: 44.04sec
+goal after match 1: -0.24459
 Run match 2 ...
-param to use:
-  QueenValueOp: 660, delta applied: +10
-  QueenValueEn: 660, delta applied: +10
-Done match 2!, elapse: 18.16sec
+test_engine param:
+  QueenValueOp: 830, (-20)
+  QueenValueEn: 830, (-20)
+  RookValueOp: 580, (-20)
+  RookValueEn: 620, (+20)
+  BishopValueOp: 270, (+20)
+  BishopValueEn: 270, (+20)
+  KnightValueOp: 420, (+20)
+  KnightValueEn: 420, (+20)
+base_engine param:
+  QueenValueOp: 850
+  QueenValueEn: 850
+  RookValueOp: 600
+  RookValueEn: 600
+  BishopValueOp: 250
+  BishopValueEn: 250
+  KnightValueOp: 400
+  KnightValueEn: 400
+Done match 2!, elapse: 50.74sec
+goal after match 2: -0.61959
 Done engine match!
-optimizer goal after match 1: -0.49829 (low is better)
-optimizer goal after match 2: -0.74829 (low is better)
-Basic gradient after 2 engine matches:
-  QueenValueOp: -1.2499999999999996
-  QueenValueEn: -1.2499999999999996
-New gradient after applying correction:
-  QueenValueOp: -0.01249999999999999
-  QueenValueEn: -0.01249999999999999
-new param after application of gradient:
-  QueenValueOp: 650
-  QueenValueEn: 650
-new param after application of limits:
-  QueenValueOp: 650
-  QueenValueEn: 650
-new param after application of best average param:
-  QueenValueOp: 650
-  QueenValueEn: 650
-new param after application of limits:
-  QueenValueOp: 650
-  QueenValueEn: 650
+optimizer goal after match 1: -0.24459 (low is better)
+optimizer goal after match 2: -0.61959 (low is better)
 best param:
-  QueenValueOp: 650
-  QueenValueEn: 650
-best mean goal: -0.6232928932188134
+  QueenValueOp: 849
+  QueenValueEn: 849
+  RookValueOp: 599
+  RookValueEn: 600
+  BishopValueOp: 250
+  BishopValueEn: 250
+  KnightValueOp: 400
+  KnightValueEn: 400
+best mean goal: -0.43208578643762685
 done iter 1!
 =========================================
 starting iter 2 ...
-current param:
-  QueenValueOp: 650
-  QueenValueEn: 650
-Run engine match ...
-current optimizer mean goal: -0.62329 (low is better, lowest: -1.0, highest: 1.0)
-Sample, optimizer goal = -(engine match score) or -(3.0 pts/4 games) or -0.75
-Run 2 matches in parallel ...
-Run match 1 ...
-param to use:
-  QueenValueOp: 642, delta applied: -8
-  QueenValueEn: 642, delta applied: -8
-Run match 2 ...
-param to use:
-  QueenValueOp: 657, delta applied: +7
-  QueenValueEn: 657, delta applied: +7
-Done match 1!, elapse: 31.88sec
-Done match 2!, elapse: 31.88sec
-Done engine match!
-optimizer goal after match 1: -0.37373 (low is better)
-optimizer goal after match 2: -0.37376 (low is better)
-Basic gradient after 2 engine matches:
-  QueenValueOp: -0.0001993076417823503
-  QueenValueEn: -0.0001993076417823503
-Modify the gradient because the result of engine matches
-when using the new param did not improve, but we will not
-re-run the engine matches.
-Modified gradient at alpha=0.1:
-  QueenValueOp: -1.993076417823503e-05
-  QueenValueEn: -1.993076417823503e-05
-New gradient after applying correction:
-  QueenValueOp: -0.002137878684519384
-  QueenValueEn: -0.002137878684519384
-new param after application of gradient:
-  QueenValueOp: 650
-  QueenValueEn: 650
-new param after application of limits:
-  QueenValueOp: 650
-  QueenValueEn: 650
-new param after application of best average param:
-  QueenValueOp: 650
-  QueenValueEn: 650
-new param after application of limits:
-  QueenValueOp: 650
-  QueenValueEn: 650
-best param:
-  QueenValueOp: 650
-  QueenValueEn: 650
-best mean goal: -0.6232928932188134
-done iter 2!
-=========================================
-starting iter 3 ...
-current param:
-  QueenValueOp: 650
-  QueenValueEn: 650
-Run engine match ...
-current optimizer mean goal: -0.54011 (low is better, lowest: -1.0, highest: 1.0)
-Sample, optimizer goal = -(engine match score) or -(3.0 pts/4 games) or -0.75
-Run 2 matches in parallel ...
-Run match 1 ...
-param to use:
-  QueenValueOp: 643, delta applied: -7
-  QueenValueEn: 643, delta applied: -7
-Run match 2 ...
-param to use:
-  QueenValueOp: 657, delta applied: +7
-  QueenValueEn: 657, delta applied: +7
-Done match 1!, elapse: 23.18sec
-Done match 2!, elapse: 33.34sec
-Done engine match!
-optimizer goal after match 1: -0.24882 (low is better)
-optimizer goal after match 2: -0.62379 (low is better)
-Basic gradient after 2 engine matches:
-  QueenValueOp: -2.6737869287694087
-  QueenValueEn: -2.6737869287694087
-New gradient after applying correction:
-  QueenValueOp: -0.07298105438080521
-  QueenValueEn: -0.07298105438080521
-new param after application of gradient:
-  QueenValueOp: 650
-  QueenValueEn: 650
-new param after application of limits:
-  QueenValueOp: 650
-  QueenValueEn: 650
-new param after application of best average param:
-  QueenValueOp: 650
-  QueenValueEn: 650
-new param after application of limits:
-  QueenValueOp: 650
-  QueenValueEn: 650
-best param:
-  QueenValueOp: 650
-  QueenValueEn: 650
-best mean goal: -0.6234573089733992
-done iter 3!
-=========================================
-starting iter 4 ...
 ...
 ```
 
