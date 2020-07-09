@@ -1,85 +1,54 @@
-
-
-
-
 <!DOCTYPE html>
-<html lang="en">
-  
-  <head>
-    
-      <meta charset="utf-8">
-      <title>Bokeh Plot</title>
-      
-      
-        
-          
-        
-        
-          
-        <script type="text/javascript" src="https://cdn.bokeh.org/bokeh/release/bokeh-2.0.2.min.js" integrity="sha384-ufR9RFnRs6lniiaFvtJziE0YeidtAgBRH6ux2oUItHw5WTvE1zuk9uzhUU/FJXDp" crossorigin="anonymous"></script>
-        <script type="text/javascript">
-            Bokeh.set_log_level("info");
-        </script>
-        
-      
-      
-    
-  </head>
-  
-  
-  <body>
-    
-      
-        
-          
-          
-            
-              <div class="bk-root" id="22f235de-24c9-4181-82cf-cc4a35e462d6" data-root-id="1099"></div>
-            
-          
-        
-      
-      
-        <script type="application/json" id="1316">
-          {"4e142697-4f4f-4486-bfc1-a7d598d0237d":{"roots":{"references":[{"attributes":{},"id":"1108","type":"BasicTickFormatter"},{"attributes":{},"id":"1113","type":"Selection"},{"attributes":{"line_alpha":0.1,"line_color":"blue","line_width":2,"x":{"field":"x"},"y":{"field":"y"}},"id":"1049","type":"Line"},{"attributes":{},"id":"1004","type":"DataRange1d"},{"attributes":{},"id":"1115","type":"UnionRenderers"},{"attributes":{"bottom_units":"screen","fill_alpha":0.5,"fill_color":"lightgrey","left_units":"screen","level":"overlay","line_alpha":1.0,"line_color":"black","line_dash":[4,4],"line_width":2,"render_mode":"css","right_units":"screen","top_units":"screen"},"id":"1086","type":"BoxAnnotation"},{"attributes":{},"id":"1116","type":"Selection"},{"attributes":{},"id":"1112","type":"UnionRenderers"},{"attributes":{"axis_label":"Iterations","formatter":{"id":"1040"},"ticker":{"id":"1013"}},"id":"1012","type":"LinearAxis"},{"attributes":{},"id":"1006","type":"DataRange1d"},{"attributes":{"below":[{"id":"1012"}],"center":[{"id":"1015"},{"id":"1019"},{"id":"1045"}],"left":[{"id":"1016"}],"plot_height":300,"renderers":[{"id":"1037"},{"id":"1050"}],"title":{"id":"1002"},"toolbar":{"id":"1027"},"x_range":{"id":"1004"},"x_scale":{"id":"1008"},"y_range":{"id":"1006"},"y_scale":{"id":"1010"}},"id":"1001","subtype":"Figure","type":"Plot"},{"attributes":{},"id":"1040","type":"BasicTickFormatter"},{"attributes":{},"id":"1013","type":"BasicTicker"},{"attributes":{"data_source":{"id":"1034"},"glyph":{"id":"1035"},"hover_glyph":null,"muted_glyph":null,"nonselection_glyph":{"id":"1036"},"selection_glyph":null,"view":{"id":"1038"}},"id":"1037","type":"GlyphRenderer"},{"attributes":{},"id":"1008","type":"LinearScale"},{"attributes":{},"id":"1010","type":"LinearScale"},{"attributes":{"axis":{"id":"1012"},"ticker":null},"id":"1015","type":"Grid"},{"attributes":{"axis_label":"Queen value in CP","formatter":{"id":"1042"},"ticker":{"id":"1017"}},"id":"1016","type":"LinearAxis"},{"attributes":{},"id":"1017","type":"BasicTicker"},{"attributes":{"axis":{"id":"1016"},"dimension":1,"ticker":null},"id":"1019","type":"Grid"},{"attributes":{"overlay":{"id":"1026"}},"id":"1022","type":"BoxZoomTool"},{"attributes":{},"id":"1042","type":"BasicTickFormatter"},{"attributes":{"label":{"value":"queen ending value"},"renderers":[{"id":"1050"}]},"id":"1060","type":"LegendItem"},{"attributes":{},"id":"1025","type":"HelpTool"},{"attributes":{"text":"Queen piece value optimization, max_iter=100"},"id":"1002","type":"Title"},{"attributes":{},"id":"1020","type":"PanTool"},{"attributes":{},"id":"1021","type":"WheelZoomTool"},{"attributes":{"data":{"x":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100],"y":[649,670,714,723,792,802,806,845,837,842,851,886,914,950,1004,1015,1012,990,939,913,880,868,858,851,838,797,798,799,799,806,765,731,718,647,572,507,468,437,366,310,310,310,310,310,310,346,378,406,380,396,426,452,453,495,570,635,704,778,841,892,924,942,956,985,1010,1019,1027,1053,1073,1080,1081,1037,1010,984,962,924,895,871,854,860,883,911,935,987,1064,1142,1148,1145,1143,1101,1055,1024,956,946,944,943,970,990,1016,1038]},"selected":{"id":"1058"},"selection_policy":{"id":"1057"}},"id":"1034","type":"ColumnDataSource"},{"attributes":{},"id":"1023","type":"SaveTool"},{"attributes":{},"id":"1024","type":"ResetTool"},{"attributes":{"data_source":{"id":"1047"},"glyph":{"id":"1048"},"hover_glyph":null,"muted_glyph":null,"nonselection_glyph":{"id":"1049"},"selection_glyph":null,"view":{"id":"1051"}},"id":"1050","type":"GlyphRenderer"},{"attributes":{"source":{"id":"1094"}},"id":"1098","type":"CDSView"},{"attributes":{"data":{"x":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100],"y":[650,629,639,640,668,685,694,748,787,813,804,764,756,783,836,939,987,1073,1033,972,930,909,893,880,889,930,930,929,930,924,969,1007,1023,1012,979,952,949,944,955,968,977,986,995,1006,1014,1041,1064,1083,1120,1109,1140,1166,1158,1189,1254,1311,1355,1360,1365,1362,1341,1332,1325,1312,1300,1266,1235,1270,1299,1313,1321,1280,1240,1203,1172,1200,1234,1263,1284,1362,1381,1377,1375,1384,1404,1402,1422,1443,1461,1369,1282,1180,1110,1101,1073,1048,1101,1144,1178,1209]},"selected":{"id":"1113"},"selection_policy":{"id":"1112"}},"id":"1047","type":"ColumnDataSource"},{"attributes":{"line_color":"magenta","line_width":2,"x":{"field":"x"},"y":{"field":"y"}},"id":"1095","type":"Line"},{"attributes":{"source":{"id":"1047"}},"id":"1051","type":"CDSView"},{"attributes":{"below":[{"id":"1072"}],"center":[{"id":"1075"},{"id":"1079"}],"left":[{"id":"1076"}],"plot_height":300,"renderers":[{"id":"1097"}],"title":{"id":"1062"},"toolbar":{"id":"1087"},"x_range":{"id":"1064"},"x_scale":{"id":"1068"},"y_range":{"id":"1066"},"y_scale":{"id":"1070"}},"id":"1061","subtype":"Figure","type":"Plot"},{"attributes":{"line_alpha":0.1,"line_color":"magenta","line_width":2,"x":{"field":"x"},"y":{"field":"y"}},"id":"1096","type":"Line"},{"attributes":{},"id":"1057","type":"UnionRenderers"},{"attributes":{"label":{"value":"queen opening value"},"renderers":[{"id":"1037"}]},"id":"1046","type":"LegendItem"},{"attributes":{},"id":"1058","type":"Selection"},{"attributes":{"bottom_units":"screen","fill_alpha":0.5,"fill_color":"lightgrey","left_units":"screen","level":"overlay","line_alpha":1.0,"line_color":"black","line_dash":[4,4],"line_width":2,"render_mode":"css","right_units":"screen","top_units":"screen"},"id":"1026","type":"BoxAnnotation"},{"attributes":{"data_source":{"id":"1094"},"glyph":{"id":"1095"},"hover_glyph":null,"muted_glyph":null,"nonselection_glyph":{"id":"1096"},"selection_glyph":null,"view":{"id":"1098"}},"id":"1097","type":"GlyphRenderer"},{"attributes":{"children":[{"id":"1001"},{"id":"1061"}]},"id":"1099","type":"Column"},{"attributes":{},"id":"1073","type":"BasicTicker"},{"attributes":{"text":"Mean of the last 30 best score"},"id":"1062","type":"Title"},{"attributes":{},"id":"1080","type":"PanTool"},{"attributes":{},"id":"1064","type":"DataRange1d"},{"attributes":{},"id":"1066","type":"DataRange1d"},{"attributes":{},"id":"1068","type":"LinearScale"},{"attributes":{"axis_label":"Iterations","formatter":{"id":"1106"},"ticker":{"id":"1073"}},"id":"1072","type":"LinearAxis"},{"attributes":{},"id":"1070","type":"LinearScale"},{"attributes":{"axis":{"id":"1072"},"ticker":null},"id":"1075","type":"Grid"},{"attributes":{"axis_label":"Score ((w + d/2)/g)","formatter":{"id":"1108"},"ticker":{"id":"1077"}},"id":"1076","type":"LinearAxis"},{"attributes":{},"id":"1077","type":"BasicTicker"},{"attributes":{"axis":{"id":"1076"},"dimension":1,"ticker":null},"id":"1079","type":"Grid"},{"attributes":{"active_drag":"auto","active_inspect":"auto","active_multi":null,"active_scroll":"auto","active_tap":"auto","tools":[{"id":"1020"},{"id":"1021"},{"id":"1022"},{"id":"1023"},{"id":"1024"},{"id":"1025"}]},"id":"1027","type":"Toolbar"},{"attributes":{"active_drag":"auto","active_inspect":"auto","active_multi":null,"active_scroll":"auto","active_tap":"auto","tools":[{"id":"1080"},{"id":"1081"},{"id":"1082"},{"id":"1083"},{"id":"1084"},{"id":"1085"}]},"id":"1087","type":"Toolbar"},{"attributes":{"data":{"x":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100],"y":[0.46,0.55,0.58,0.58,0.62,0.62,0.62,0.62,0.63,0.62,0.64,0.65,0.65,0.65,0.66,0.67,0.67,0.69,0.69,0.7,0.72,0.72,0.74,0.74,0.75,0.75,0.76,0.76,0.76,0.78,0.79,0.79,0.8,0.8,0.81,0.81,0.81,0.81,0.82,0.82,0.82,0.82,0.82,0.82,0.82,0.82,0.82,0.82,0.82,0.81,0.81,0.81,0.81,0.8,0.8,0.78,0.77,0.76,0.76,0.76,0.76,0.75,0.75,0.74,0.74,0.73,0.73,0.74,0.74,0.74,0.74,0.74,0.74,0.74,0.75,0.76,0.76,0.76,0.75,0.76,0.77,0.77,0.77,0.78,0.78,0.79,0.79,0.79,0.8,0.8,0.81,0.81,0.81,0.82,0.82,0.82,0.81,0.81,0.82,0.82]},"selected":{"id":"1116"},"selection_policy":{"id":"1115"}},"id":"1094","type":"ColumnDataSource"},{"attributes":{},"id":"1081","type":"WheelZoomTool"},{"attributes":{"line_alpha":0.1,"line_color":"green","line_width":2,"x":{"field":"x"},"y":{"field":"y"}},"id":"1036","type":"Line"},{"attributes":{},"id":"1085","type":"HelpTool"},{"attributes":{"items":[{"id":"1046"},{"id":"1060"}],"location":"top_left"},"id":"1045","type":"Legend"},{"attributes":{"overlay":{"id":"1086"}},"id":"1082","type":"BoxZoomTool"},{"attributes":{"source":{"id":"1034"}},"id":"1038","type":"CDSView"},{"attributes":{},"id":"1083","type":"SaveTool"},{"attributes":{"line_color":"green","line_width":2,"x":{"field":"x"},"y":{"field":"y"}},"id":"1035","type":"Line"},{"attributes":{},"id":"1084","type":"ResetTool"},{"attributes":{"line_color":"blue","line_width":2,"x":{"field":"x"},"y":{"field":"y"}},"id":"1048","type":"Line"},{"attributes":{},"id":"1106","type":"BasicTickFormatter"}],"root_ids":["1099"]},"title":"Bokeh Application","version":"2.0.2"}}
-        </script>
-        <script type="text/javascript">
-          (function() {
-            var fn = function() {
-              Bokeh.safely(function() {
-                (function(root) {
-                  function embed_document(root) {
-                    
-                  var docs_json = document.getElementById('1316').textContent;
-                  var render_items = [{"docid":"4e142697-4f4f-4486-bfc1-a7d598d0237d","root_ids":["1099"],"roots":{"1099":"22f235de-24c9-4181-82cf-cc4a35e462d6"}}];
-                  root.Bokeh.embed.embed_items(docs_json, render_items);
-                
-                  }
-                  if (root.Bokeh !== undefined) {
-                    embed_document(root);
-                  } else {
-                    var attempts = 0;
-                    var timer = setInterval(function(root) {
-                      if (root.Bokeh !== undefined) {
-                        clearInterval(timer);
-                        embed_document(root);
-                      } else {
-                        attempts++;
-                        if (attempts > 100) {
-                          clearInterval(timer);
-                          console.log("Bokeh: ERROR: Unable to run BokehJS code because BokehJS library is missing");
-                        }
-                      }
-                    }, 10, root)
-                  }
-                })(window);
-              });
-            };
-            if (document.readyState != "loading") fn();
-            else document.addEventListener("DOMContentLoaded", fn);
-          })();
-        </script>
-    
-  </body>
-  
+<html>
+	<head>
+
+		<style>
+			body {margin-left: 35%; margin-right: 35%}
+		</style>
+
+		<title>SPSA Game Parameter Optimization</title>
+
+		<meta charset="UTF-8">
+		<meta name="description" content="SPSA - Simultaneous Perturbation Stochastic Approximation">
+		<meta name="keywords" content="SPSA, Optimization, Python">
+		<meta name="author" content="fsmosca">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	  
+	</head>
+	
+	<body>
+
+		<h2>Parameter Tuning Examples</h2>
+		
+		<h3>Tuning with 8 parameters</h3>
+		
+		<p>
+		There are 2 engines involved, the test_engine and the base_engine. In every iteration an engine
+		matches will be conducted. The test_engine will take the suggested parameter values from the tuner
+		and use it to play against the base_engine. The base_engine will use the parameter values used by
+		test_engine from the previous iteration.</p>
+		
+		<p>Two matches will be conducted in every iteration to approximate the gradient and
+		there are 8 games per match for a total of 16 games. It is better to have more games per match
+		so that the tuner can give a good approximation of the parameter values to try.</p>
+		
+		<h4>Parameters to be tuned</h4>
+		<p>Units are in centipawn, at the start queens are undervalued, rooks are overvalued,
+		bishops are undervalued and finally knights are overvalued.</p>
+		<ul>
+			<li>QueenValueOp 850</li>
+			<li>QueenValueEn 850</li>
+			<li>RookValueOp 600</li>
+			<li>RookValueEn 600</li>
+			<li>BishopValueOp 250</li>
+			<li>BishopValueEn 250</li>
+			<li>KnightValueOp 400</li>
+			<li>KnightValueEn 400</li>
+		</ul>
+		<p>Here is a <a href="param_8.html", target=_blank>sample optimization</a> run trying to tune the piece values.</p>
+
+	</body>
 </html>
+
+
+
