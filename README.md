@@ -246,4 +246,4 @@ games in match 2, just increase the number of rounds to 4, that is from 2 games 
 - *chess_match.py* : a specialized Chess version of *match.py*, more efficient because it uses parallelism for the match
 
 ### E. Sample run
-[Queen piece value optimization](https://github.com/fsmosca/spsa/wiki/Sample-run)
+[Sample piece values optimization](https://fsmosca.github.io/spsa/)
