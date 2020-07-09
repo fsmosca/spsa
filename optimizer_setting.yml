@@ -15,14 +15,14 @@ test_engine:
   # is low optimizer will only suggest smaller changes to initial value. If the
   # parameter is not sensitive to changes, you can increase the factor.
   parameter_to_optimize:
-    QueenValueOp: {value: 850, min: 700, max: 1100, factor: 100}
-    QueenValueEn: {value: 850, min: 700, max: 1100, factor: 100}
-    RookValueOp: {value: 600, min: 400, max: 700, factor: 100}
-    RookValueEn: {value: 600, min: 400, max: 700, factor: 100}
-    BishopValueOp: {value: 250, min: 200, max: 400, factor: 100}
-    BishopValueEn: {value: 250, min: 200, max: 400, factor: 100}
-    KnightValueOp: {value: 400, min: 250, max: 500, factor: 100}
-    KnightValueEn: {value: 400, min: 250, max: 500, factor: 100}
+    QueenValueOp: {value: 850, min: 700, max: 1100, factor: 200}
+    QueenValueEn: {value: 850, min: 700, max: 1100, factor: 200}
+    RookValueOp: {value: 600, min: 400, max: 700, factor: 200}
+    RookValueEn: {value: 600, min: 400, max: 700, factor: 200}
+    BishopValueOp: {value: 250, min: 200, max: 400, factor: 200}
+    BishopValueEn: {value: 250, min: 200, max: 400, factor: 200}
+    KnightValueOp: {value: 400, min: 250, max: 500, factor: 200}
+    KnightValueEn: {value: 400, min: 250, max: 500, factor: 200}
 
 
 # Main section for the engine with fix setting as opponent to test_engine
