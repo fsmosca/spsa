@@ -143,6 +143,21 @@ def is_game_end(line, start_turn):
     return game_end, gres, e1score
 
 
+def param_to_dict(param):
+    """
+    Convert string param to a dictionary.
+    """
+    ret_param = {}
+    for par in param.split(','):
+        par = par.strip()
+        sppar = par.split()  # Does not support param with space
+        spname = sppar[0].strip()
+        spvalue = int(sppar[1].strip())
+        ret_param.update({spname: spvalue})
+
+    return ret_param
+
+
 def match(e1, e2, fen, test_param, base_param, output_game_file, btms=10000,
           incms=100, num_games=2, is_adjudicate_game=False):
     """
@@ -335,22 +350,8 @@ def main():
     is_random_startpos = True
 
     # Convert param to a dict
-    test_param = {}
-    for par in args.test_param.split(','):
-        par = par.strip()
-        sppar = par.split()  # Does not support param with space
-        spname = sppar[0].strip()
-        spvalue = int(sppar[1].strip())
-        test_param.update({spname: spvalue})
-
-    # Convert base param to a dict
-    base_param = {}
-    for par in args.base_param.split(','):
-        par = par.strip()
-        sppar = par.split()  # Does not support param with space
-        spname = sppar[0].strip()
-        spvalue = int(sppar[1].strip())
-        base_param.update({spname: spvalue})
+    test_param = param_to_dict(args.test_param)
+    base_param = param_to_dict(args.base_param)
 
     fens = get_fen_list(fen_file, is_random_startpos)
     test_engine_score = []
