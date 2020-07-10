@@ -18,7 +18,6 @@ class Timer:
         self.base_time = base_time
         self.inc_time = inc_time
         self.rem_time = self.base_time + self.inc_time
-        self.is_zero_time = True if self.rem_time <= 0 else False
         self.cecp_time = self.rem_time // 10
 
     def update(self, elapse):
@@ -28,7 +27,9 @@ class Timer:
         self.rem_time -= elapse
         self.rem_time += self.inc_time
         self.cecp_time = self.rem_time // 10
-        self.is_zero_time = True if self.rem_time <= 0 else False
+
+    def is_zero_time(self):
+        return True if self.rem_time <= 0 else False
 
 
 def get_fen_list(fn):
