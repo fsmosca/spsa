@@ -8,6 +8,7 @@ A module to handle non-uci engine vs engine matches.
 import subprocess
 import argparse
 import time
+import random
 
 
 class Timer:
@@ -33,7 +34,7 @@ class Timer:
         return self.rem_time // 10
 
 
-def get_fen_list(fn):
+def get_fen_list(fn, is_rand=False):
     """
     Red fen file and return a list of fens.
     """
@@ -42,6 +43,9 @@ def get_fen_list(fn):
         for lines in f:
             fen = lines.strip()
             fens.append(fen)
+
+    if is_rand:
+        random.shuffle(fens)
 
     return fens
 
@@ -325,6 +329,7 @@ def main():
     e1 = args.test_engine
     e2 = args.base_engine
     fen_file = args.start_fen
+    is_random_startpos = True
 
     # Convert param to a dict
     test_param = {}
@@ -344,7 +349,7 @@ def main():
         spvalue = int(sppar[1].strip())
         base_param.update({spname: spvalue})
 
-    fens = get_fen_list(fen_file)
+    fens = get_fen_list(fen_file, is_random_startpos)
     test_engine_score = []
 
     # Todo: Add in command line.
