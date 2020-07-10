@@ -276,8 +276,9 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, btms=10000,
 
             side = not side
 
-        save_game(output_game_file, fen, move_hist, name_color[0],
-                  name_color[1], start_turn, gres)
+        if output_game_file is not None:
+            save_game(output_game_file, fen, move_hist, name_color[0],
+                      name_color[1], start_turn, gres)
 
         for e in eng:
             e.stdin.write('quit\n')
@@ -323,6 +324,8 @@ def main():
                         type=int, default=100)
     parser.add_argument('--adjudicate', action='store_true',
                         help='adjudicate the game')
+    parser.add_argument('--pgn-output-file', required=False,
+                        help='pgn output filename')
 
     args = parser.parse_args()
 
@@ -353,7 +356,7 @@ def main():
     test_engine_score = []
 
     # Todo: Add in command line.
-    output_game_file = 'output_game.pgn'
+    output_game_file = args.pgn_output_file
 
     # Loop thru the fens and create a match.
     for i, fen in enumerate(fens):
