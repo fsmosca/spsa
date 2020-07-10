@@ -149,7 +149,7 @@ def match(e1, e2, fen, test_param, output_game_file, btms=10000, incms=100,
 
         for i, e in enumerate(eng):
             e.stdin.write('xboard\n')
-            e.stdin.write('protover\n')
+            e.stdin.write('protover 2\n')
             for eline in iter(e.stdout.readline, ''):
                 line = eline.strip()
                 if 'done=1' in line:
