@@ -332,11 +332,11 @@ def main():
                              '"QueenOp 800 500 1500 1000, RookOp ..."\n'
                              'parname value min max factor')
     parser.add_argument('--tc-base-timems', required=False,
-                        help='base time in millisec, default=10000',
-                        type=int, default=10000)
+                        help='base time in millisec, default=5000',
+                        type=int, default=5000)
     parser.add_argument('--tc-inc-timems', required=False,
-                        help='increment in millisec, default=100',
-                        type=int, default=100)
+                        help='increment in millisec, default=50',
+                        type=int, default=50)
     parser.add_argument('--adjudicate', action='store_true',
                         help='adjudicate the game')
     parser.add_argument('--pgn-output-file', required=False,
