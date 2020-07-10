@@ -18,7 +18,6 @@ class Timer:
         self.base_time = base_time
         self.inc_time = inc_time
         self.rem_time = self.base_time + self.inc_time
-        self.cecp_time = self.rem_time // 10
 
     def update(self, elapse):
         """
@@ -26,10 +25,12 @@ class Timer:
         """
         self.rem_time -= elapse
         self.rem_time += self.inc_time
-        self.cecp_time = self.rem_time // 10
 
     def is_zero_time(self):
         return True if self.rem_time <= 0 else False
+
+    def rem_cs(self):
+        return self.rem_time // 10
 
 
 def get_fen_list(fn):
@@ -220,13 +221,13 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, btms=10000,
             # Todo: Calculate time remaining
 
             if num == 0:
-                eng[side].stdin.write(f'time {timer[side].cecp_time}\n')
-                eng[side].stdin.write(f'otim {timer[not side].cecp_time}\n')
+                eng[side].stdin.write(f'time {timer[side].rem_cs()}\n')
+                eng[side].stdin.write(f'otim {timer[not side].rem_cs()}\n')
                 t1 = time.perf_counter_ns()
                 eng[side].stdin.write('go\n')
             else:
-                eng[side].stdin.write(f'time {timer[side].cecp_time}\n')
-                eng[side].stdin.write(f'otim {timer[not side].cecp_time}\n')
+                eng[side].stdin.write(f'time {timer[side].rem_cs()}\n')
+                eng[side].stdin.write(f'otim {timer[not side].rem_cs()}\n')
                 move_hist.append(move)
                 t1 = time.perf_counter_ns()
                 eng[side].stdin.write(f'{move}\n')
