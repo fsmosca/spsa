@@ -128,6 +128,7 @@ def match(e1, e2, fen, test_param, output_game_file, btms=10000, incms=100,
     move_hist = []
     time_value = btms//100 + incms//100  # Convert ms to centisec
     all_e1score = 0.0
+    is_show_search_info = False
 
     # Start engine match, 2 games will be played.
     for gn in range(num_games):
@@ -199,7 +200,7 @@ def match(e1, e2, fen, test_param, output_game_file, btms=10000, incms=100,
             for eline in iter(eng[side].stdout.readline, ''):
                 line = eline.strip()
 
-                if False:
+                if is_show_search_info:
                     if not line.startswith('#'):
                         print(line)
 
