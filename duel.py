@@ -218,18 +218,14 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, btms=10000,
 
         # Start the game.
         while True:
-            # Todo: Calculate time remaining
+            eng[side].stdin.write(f'time {timer[side].rem_cs()}\n')
+            eng[side].stdin.write(f'otim {timer[not side].rem_cs()}\n')
+            t1 = time.perf_counter_ns()
 
             if num == 0:
-                eng[side].stdin.write(f'time {timer[side].rem_cs()}\n')
-                eng[side].stdin.write(f'otim {timer[not side].rem_cs()}\n')
-                t1 = time.perf_counter_ns()
                 eng[side].stdin.write('go\n')
             else:
-                eng[side].stdin.write(f'time {timer[side].rem_cs()}\n')
-                eng[side].stdin.write(f'otim {timer[not side].rem_cs()}\n')
                 move_hist.append(move)
-                t1 = time.perf_counter_ns()
                 eng[side].stdin.write(f'{move}\n')
 
             num += 1
