@@ -202,50 +202,43 @@ class SPSA_minimization:
             for n, v in theta.items():
                 print(f'  {n}: {int(v["value"] * v["factor"])}')
 
-            if (k % 100 == 0) or (k <= 1000):
-                (avg_goal, avg_theta) = self.average_evaluations(30)
-                # print(f'iter = {k}/{self.max_iter}')
-                logging.info(f'{__file__} > iter: {k}')
-                # print(f'mean goal (all) = {avg_goal}')
-                # print(f'mean theta (all) = {utils.true_param(avg_theta)}')
+            mean_all_goal, _ = self.average_evaluations(30)
+            print(f'mean all goal: {mean_all_goal}')
 
-                (avg_best_goal, avg_theta) = self.average_best_evals(30)
-                logging.info(f'{__file__} > mean goal (best): {avg_best_goal}')
-                logging.info(f'{__file__} > mean theta (best): {avg_theta}')
-                # print(f'mean goal (best) = {avg_goal}')
-                # print(f'mean theta (best) = {utils.true_param(avg_theta)}')
-                print(f'best mean goal: {avg_best_goal}')
+            mean_best_goal, _ = self.average_best_evals(30)
+            print(f'mean best goal: {mean_best_goal}')
 
-                # Save data in csv for plotting.
-                plot_data = {}
-                plot_data.update({'iter': k})
-                plot_data.update({'bestmeangoal': avg_best_goal})
-                plot_data.update({'allmeangoal': avg_goal})
-                plot_theta = utils.true_param(theta)
-                for name, value in plot_theta.items():
-                    plot_data.update({name: value["value"]})
+            # Save data in csv for plotting.
+            plot_data = {}
+            plot_data.update({'iter': k})
+            plot_data.update({'meanbestgoal': mean_best_goal})
+            plot_data.update({'meanallgoal': mean_all_goal})
+            plot_theta = utils.true_param(theta)
+            for name, value in plot_theta.items():
+                plot_data.update({name: value["value"]})
 
-                with open(self.plot_data_file, 'a') as f:
-                    cnt = 0
-                    for name, value in plot_data.items():
-                        cnt += 1
-                        if cnt == len(plot_data):
-                            f.write(f'{value}\n')
-                        else:
-                            f.write(f'{value},')
+            with open(self.plot_data_file, 'a') as f:
+                cnt = 0
+                for name, value in plot_data.items():
+                    cnt += 1
+                    if cnt == len(plot_data):
+                        f.write(f'{value}\n')
+                    else:
+                        f.write(f'{value},')
 
-            print(f'done iter {k}!')
+            print(f'done iter {k} / {self.max_iter}')
+            logging.info(f'{__file__} > done iter {k} / {self.max_iter}')
             print('=========================================')
 
             # Stopping rule 1: Average goal and iteration meet the
             # stop_all_mean_goal and stop_min_iter criteria.
-            if k >= self.stop_min_iter and avg_goal <= self.stop_all_mean_goal:
+            if k >= self.stop_min_iter and mean_all_goal <= self.stop_all_mean_goal:
                 print('Stop opimization due to good average all goal!')
                 break
 
             # Stopping rule 2: Average best goal and iteration meet the
             # stop_best_mean_goal and stop_min_iter criteria.
-            if k >= self.stop_min_iter and avg_best_goal <= self.stop_best_mean_goal:
+            if k >= self.stop_min_iter and mean_best_goal <= self.stop_best_mean_goal:
                 print('Stop opimization due to good average best goal!')
                 break
 
