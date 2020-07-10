@@ -61,8 +61,8 @@ def turn(fen):
 
 
 def save_game(outfn, fen, moves, e1, e2, start_turn, gres):
-    # Todo: Add other pgn tags.
     with open(outfn, 'a') as f:
+        f.write(f'[Event "Optimization test"]\n')
         f.write(f'[White "{e1 if start_turn else e2}"]\n')
         f.write(f'[Black "{e1 if not start_turn else e2}"]\n')
         f.write(f'[Result "{gres}"]\n')
@@ -355,7 +355,6 @@ def main():
     fens = get_fen_list(fen_file, is_random_startpos)
     test_engine_score = []
 
-    # Todo: Add in command line.
     output_game_file = args.pgn_output_file
 
     # Loop thru the fens and create a match.
