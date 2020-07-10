@@ -7,6 +7,7 @@ A module to handle non-uci engine vs engine matches.
 
 import subprocess
 import argparse
+import time
 
 
 class Timer:
@@ -18,6 +19,7 @@ class Timer:
         self.inc_time = inc_time
         self.rem_time = self.base_time + self.inc_time
         self.is_zero_time = True if self.rem_time <= 0 else False
+        self.cecp_time = self.rem_time // 10
 
     def update(self, elapse):
         """
@@ -25,6 +27,7 @@ class Timer:
         """
         self.rem_time -= elapse
         self.rem_time += self.inc_time
+        self.cecp_time = self.rem_time // 10
         self.is_zero_time = True if self.rem_time <= 0 else False
 
 
@@ -149,6 +152,9 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, btms=10000,
     all_e1score = 0.0
     is_show_search_info = False
 
+    # Setup Timer for test and base engine.
+    timer = [Timer(btms, incms), Timer(btms, incms)]
+
     # Start engine match, 2 games will be played.
     for gn in range(num_games):
 
@@ -201,8 +207,10 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, btms=10000,
             e.stdin.write(f'setboard {fen}\n')
 
         num, side, move, line, game_end = 0, 0, None, '', False
-        score_history, start_turn = [], turn(fen)
+        score_history, elapse_history, start_turn = [], [], turn(fen)
         gres, e1score = '*', 0.0
+
+        # The name color index 0 is white.
         name_color = ['test' if gn%2 == 0 and start_turn else 'base',
                       'test' if gn%2 == 1 and start_turn else 'base']
 
@@ -211,13 +219,15 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, btms=10000,
             # Todo: Calculate time remaining
 
             if num == 0:
-                eng[side].stdin.write(f'time {time_value}\n')
-                eng[side].stdin.write(f'otim {time_value}\n')
+                eng[side].stdin.write(f'time {timer[side].cecp_time}\n')
+                eng[side].stdin.write(f'otim {timer[not side].cecp_time}\n')
+                t1 = time.perf_counter_ns()
                 eng[side].stdin.write('go\n')
             else:
-                eng[side].stdin.write(f'time {time_value}\n')
-                eng[side].stdin.write(f'otim {time_value}\n')
+                eng[side].stdin.write(f'time {timer[side].cecp_time}\n')
+                eng[side].stdin.write(f'otim {timer[not side].cecp_time}\n')
                 move_hist.append(move)
+                t1 = time.perf_counter_ns()
                 eng[side].stdin.write(f'{move}\n')
 
             num += 1
@@ -240,6 +250,10 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, btms=10000,
                     break
 
                 if 'move ' in line and not line.startswith('#'):
+                    elapse = (time.perf_counter_ns() - t1) // 1000000
+                    timer[side].update(elapse)
+                    elapse_history.append(elapse)
+
                     move = line.split('move ')[1]
                     score_history.append(score)
                     break
