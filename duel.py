@@ -9,6 +9,25 @@ import subprocess
 import argparse
 
 
+class Timer:
+    def __init__(self, base_time, inc_time):
+        """
+        The time unit is in ms (milliseconds)
+        """
+        self.base_time = base_time
+        self.inc_time = inc_time
+        self.rem_time = self.base_time + self.inc_time
+        self.is_zero_time = True if self.rem_time <= 0 else False
+
+    def update(self, elapse):
+        """
+        This is called after every engine move is completed.
+        """
+        self.rem_time -= elapse
+        self.rem_time += self.inc_time
+        self.is_zero_time = True if self.rem_time <= 0 else False
+
+
 def get_fen_list(fn):
     """
     Red fen file and return a list of fens.
