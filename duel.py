@@ -304,6 +304,20 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, btms=10000,
     return all_e1score/num_games
 
 
+def round_match(fens, round, e1, e2, test_param, base_param, output_game_file,
+                    btms, incms, is_adjudicate_game):
+    test_engine_score = []
+    for i, fen in enumerate(fens):
+        print(f'starting round {i+1} ...')
+        res = match(e1, e2, fen, test_param, base_param, output_game_file,
+                    btms=btms, incms=incms, is_adjudicate_game=is_adjudicate_game)
+        test_engine_score.append(res)
+        if i >= round - 1:
+            break
+
+    return test_engine_score
+
+
 def main():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawTextHelpFormatter)
@@ -348,26 +362,22 @@ def main():
     e2 = args.base_engine
     fen_file = args.start_fen
     is_random_startpos = True
+    round = args.round
 
     # Convert param to a dict
     test_param = param_to_dict(args.test_param)
     base_param = param_to_dict(args.base_param)
 
     fens = get_fen_list(fen_file, is_random_startpos)
-    test_engine_score = []
 
     output_game_file = args.pgn_output_file
 
-    # Loop thru the fens and create a match.
-    for i, fen in enumerate(fens):
-        print(f'starting round {i+1} ...')
-        res = match(e1, e2, fen, test_param, base_param, output_game_file,
-                    btms=args.tc_base_timems, incms=args.tc_inc_timems,
-                    is_adjudicate_game=args.adjudicate)
-        print(f'ended round {i + 1}')
-        test_engine_score.append(res)
-        if i >= args.round - 1:
-            break
+    # Start match
+    start_fens = random.sample(fens, round)
+    test_engine_score = round_match(start_fens, round, e1, e2,
+                                    test_param, base_param, output_game_file,
+                                    args.tc_base_timems, args.tc_inc_timems,
+                                    args.adjudicate)
 
     # The match is done, print score perf of test engine.
     print(f'{sum(test_engine_score)/len(test_engine_score)}')
