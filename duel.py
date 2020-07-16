@@ -309,6 +309,12 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, btms=10000,
 def round_match(fen, e1, e2, test_param, base_param, output_game_file,
                 btms, incms, games_per_match, is_adjudicate_game,
                 posround=1):
+    """
+    Play a match between e1 and e2 using fen as starting position. By default
+    2 games will be played color is reversed. If posround is more than 1, the
+    match will be repeated posround times. The purpose of posround is to verify
+    that the match result is repeatable with the use of only a single fen.
+    """
     test_engine_score = []
 
     for _ in range(posround):
@@ -368,7 +374,7 @@ def main():
     fen_file = args.start_fen
     is_random_startpos = True
     games_per_match = 2
-    posround = 1
+    posround = 1  # Number of times the same position is played
 
     # Convert param to a dict
     test_param = param_to_dict(args.test_param)
@@ -383,6 +389,7 @@ def main():
     # Start match
     joblist = []
 
+    # Use Python 3.8 or higher
     with ProcessPoolExecutor(max_workers=args.concurrency) as executor:
         for i, fen in enumerate(fens):
             if i >= args.round:
