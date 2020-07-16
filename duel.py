@@ -9,6 +9,8 @@ import subprocess
 import argparse
 import time
 import random
+import concurrent.futures
+from concurrent.futures import ProcessPoolExecutor
 
 
 class Timer:
@@ -304,16 +306,16 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, btms=10000,
     return all_e1score/num_games
 
 
-def round_match(fens, round, e1, e2, test_param, base_param, output_game_file,
-                    btms, incms, is_adjudicate_game):
+def round_match(fen, e1, e2, test_param, base_param, output_game_file,
+                btms, incms, games_per_match, is_adjudicate_game,
+                posround=1):
     test_engine_score = []
-    for i, fen in enumerate(fens):
-        print(f'starting round {i+1} ...')
+
+    for _ in range(posround):
         res = match(e1, e2, fen, test_param, base_param, output_game_file,
-                    btms=btms, incms=incms, is_adjudicate_game=is_adjudicate_game)
+                    btms=btms, incms=incms, num_games=games_per_match,
+                    is_adjudicate_game=is_adjudicate_game)
         test_engine_score.append(res)
-        if i >= round - 1:
-            break
 
     return test_engine_score
 
@@ -355,6 +357,9 @@ def main():
                         help='adjudicate the game')
     parser.add_argument('--pgn-output-file', required=False,
                         help='pgn output filename')
+    parser.add_argument('--concurrency', required=False,
+                        help='number of game to run in parallel, default=1',
+                        type=int, default=1)
 
     args = parser.parse_args()
 
@@ -362,7 +367,8 @@ def main():
     e2 = args.base_engine
     fen_file = args.start_fen
     is_random_startpos = True
-    round = args.round
+    games_per_match = 2
+    posround = 1
 
     # Convert param to a dict
     test_param = param_to_dict(args.test_param)
@@ -372,15 +378,31 @@ def main():
 
     output_game_file = args.pgn_output_file
 
+    t1 = time.perf_counter()
+
     # Start match
-    start_fens = random.sample(fens, round)
-    test_engine_score = round_match(start_fens, round, e1, e2,
-                                    test_param, base_param, output_game_file,
-                                    args.tc_base_timems, args.tc_inc_timems,
-                                    args.adjudicate)
+    joblist = []
+
+    with ProcessPoolExecutor(max_workers=args.concurrency) as executor:
+        for i, fen in enumerate(fens):
+            if i >= args.round:
+                break
+            job = executor.submit(round_match, fen, e1, e2,
+                                  test_param, base_param, output_game_file,
+                                  args.tc_base_timems, args.tc_inc_timems,
+                                  games_per_match, args.adjudicate, posround)
+            joblist.append(job)
+
+        for future in concurrent.futures.as_completed(joblist):
+            try:
+                test_engine_score = future.result()
+                print(f'test_engine_score: {test_engine_score}')
+            except concurrent.futures.process.BrokenProcessPool as ex:
+                print(f'exception: {ex}')
 
     # The match is done, print score perf of test engine.
     print(f'{sum(test_engine_score)/len(test_engine_score)}')
+    print(f'elapse: {time.perf_counter() - t1:0.2f}s')
 
 
 if __name__ == '__main__':
