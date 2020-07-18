@@ -387,8 +387,8 @@ def main():
                         help='base time in millisec, default=5000',
                         type=int, default=5000)
     parser.add_argument('--tc-inc-timems', required=False,
-                        help='increment in millisec, default=50',
-                        type=int, default=50)
+                        help='increment in millisec, default=0',
+                        type=int, default=0)
     parser.add_argument('--adjudicate', action='store_true',
                         help='adjudicate the game')
     parser.add_argument('--pgn-output-file', required=False,
