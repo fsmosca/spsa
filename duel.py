@@ -313,11 +313,11 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, btms=10000,
                 # test engine wins as white
                 elif not current_color and test_engine_color:
                     res = '1-0'
-                    print(f'test engine with color {current_color} loses on time')
+                    print(f'test engine with color {current_color} wins on time')
                 # test engine wins as black
                 elif current_color and not test_engine_color:
                     res = '0-1'
-                    print(f'test engine with color {current_color} loses on time')
+                    print(f'test engine with color {current_color} wins on time')
                 break
 
             side = not side
