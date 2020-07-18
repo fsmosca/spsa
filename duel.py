@@ -30,7 +30,7 @@ class Timer:
         self.rem_time += self.inc_time
 
     def is_zero_time(self):
-        return True if self.rem_time <= 0 else False
+        return True if self.rem_cs() <= 0 else False
 
     def rem_cs(self):
         return self.rem_time // 10
