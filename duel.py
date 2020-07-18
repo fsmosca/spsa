@@ -179,9 +179,6 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, btms=10000,
     all_e1score = 0.0
     is_show_search_info = False
 
-    # Setup Timer for test and base engine.
-    timer = [Timer(btms, incms), Timer(btms, incms)]
-
     # Start engine match, 2 games will be played.
     for gn in range(num_games):
 
@@ -245,6 +242,9 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, btms=10000,
 
         test_engine_color = True if start_turn and gn % 2 == 0 else False
         termination = ''
+
+        # Setup Timer for test and base engine.
+        timer = [Timer(btms, incms), Timer(btms, incms)]
 
         # Start the game.
         while True:
