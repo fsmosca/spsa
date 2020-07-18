@@ -64,7 +64,7 @@ def turn(fen):
 
 def save_game(outfn, fen, moves, e1, e2, start_turn, gres, termination=''):
     with open(outfn, 'a') as f:
-        f.write(f'[Event "Optimization test"]\n')
+        f.write('[Event "Optimization test"]\n')
         f.write(f'[White "{e1 if start_turn else e2}"]\n')
         f.write(f'[Black "{e1 if not start_turn else e2}"]\n')
         f.write(f'[Result "{gres}"]\n')
@@ -175,7 +175,6 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, btms=10000,
     """
     win_adj_move_num, draw_adj_move_num = 40, 60
     move_hist = []
-    time_value = btms//100 + incms//100  # Convert ms to centisec
     all_e1score = 0.0
     is_show_search_info = False
 
@@ -237,8 +236,8 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, btms=10000,
         current_color = start_turn  # True if white to move
 
         # The name color index 0 is white.
-        name_color = ['test' if gn%2 == 0 and start_turn else 'base',
-                      'test' if gn%2 == 1 and start_turn else 'base']
+        name_color = ['test' if gn % 2 == 0 and start_turn else 'base',
+                      'test' if gn % 2 == 1 and start_turn else 'base']
 
         test_engine_color = True if start_turn and gn % 2 == 0 else False
         termination = ''
