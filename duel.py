@@ -62,12 +62,16 @@ def turn(fen):
     return False
 
 
-def save_game(outfn, fen, moves, e1, e2, start_turn, gres):
+def save_game(outfn, fen, moves, e1, e2, start_turn, gres, termination=''):
     with open(outfn, 'a') as f:
         f.write(f'[Event "Optimization test"]\n')
         f.write(f'[White "{e1 if start_turn else e2}"]\n')
         f.write(f'[Black "{e1 if not start_turn else e2}"]\n')
         f.write(f'[Result "{gres}"]\n')
+
+        if termination != '':
+            f.write(f'[Termination "{termination}"]\n')
+
         f.write(f'[FEN "{fen}"]\n\n')
         for m in moves:
             f.write(f'{m} ')
@@ -240,6 +244,7 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, btms=10000,
                       'test' if gn%2 == 1 and start_turn else 'base']
 
         test_engine_color = True if start_turn and gn % 2 == 0 else False
+        termination = ''
 
         # Start the game.
         while True:
@@ -275,7 +280,6 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, btms=10000,
                 if 'move ' in line and not line.startswith('#'):
                     elapse = (time.perf_counter_ns() - t1) // 1000000
                     timer[side].update(elapse)
-                    print(f'timeleft: {timer[side].rem_cs()}cs')
                     elapse_history.append(elapse)
 
                     move = line.split('move ')[1]
@@ -283,6 +287,7 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, btms=10000,
 
                     if timer[side].is_zero_time():
                         is_time_over[current_color] = True
+                        termination = 'forfeits on time'
                         print('time is over')
                     break
 
@@ -304,20 +309,20 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, btms=10000,
             if is_time_over[current_color]:
                 # test engine loses as white
                 if current_color and test_engine_color:
-                    res = '0-1'
-                    print(f'test engine with color {current_color} loses on time')
+                    gres = '0-1'
+                    print(f'test engine with color {test_engine_color} loses on time')
                 # test engine loses as black
                 elif not current_color and not test_engine_color:
-                    res = '1-0'
-                    print(f'test engine with color {current_color} loses on time')
+                    gres = '1-0'
+                    print(f'test engine with color {test_engine_color} loses on time')
                 # test engine wins as white
                 elif not current_color and test_engine_color:
-                    res = '1-0'
-                    print(f'test engine with color {current_color} wins on time')
+                    gres = '1-0'
+                    print(f'test engine with color {test_engine_color} wins on time')
                 # test engine wins as black
                 elif current_color and not test_engine_color:
-                    res = '0-1'
-                    print(f'test engine with color {current_color} wins on time')
+                    gres = '0-1'
+                    print(f'test engine with color {test_engine_color} wins on time')
                 break
 
             side = not side
@@ -325,7 +330,7 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, btms=10000,
 
         if output_game_file is not None:
             save_game(output_game_file, fen, move_hist, name_color[0],
-                      name_color[1], start_turn, gres)
+                      name_color[1], start_turn, gres, termination)
 
         for e in eng:
             e.stdin.write('quit\n')
