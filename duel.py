@@ -130,16 +130,16 @@ def adjudicate_draw(score_history, draw_adj_move_num):
     return ret, gres, e1score
 
 
-def is_game_end(line, start_turn):
+def is_game_end(line, test_engine_color):
     game_end, gres, e1score = False, '*', 0.0
 
     if '1-0' in line:
         game_end = True
-        e1score = 1.0 if start_turn else 0.0
+        e1score = 1.0 if test_engine_color else 0.0
         gres = '1-0'
     elif '0-1' in line:
         game_end = True
-        e1score = 0.0 if start_turn else 0.0
+        e1score = 1.0 if not test_engine_color else 0.0
         gres = '0-1'
     elif '1/2-1/2' in line:
         game_end = True
@@ -162,6 +162,38 @@ def param_to_dict(param):
         ret_param.update({spname: spvalue})
 
     return ret_param
+
+
+def time_forfeit(is_timeup, current_color, test_engine_color):
+    game_end, gres, e1score = False, '*', 0.0
+
+    if is_timeup:
+        # test engine loses as white
+        if current_color and test_engine_color:
+            gres = '0-1'
+            e1score = 0.0
+            game_end = True
+            print(f'test engine with color {test_engine_color} loses on time')
+        # test engine loses as black
+        elif not current_color and not test_engine_color:
+            gres = '1-0'
+            e1score = 0.0
+            game_end = True
+            print(f'test engine with color {test_engine_color} loses on time')
+        # test engine wins as white
+        elif not current_color and test_engine_color:
+            gres = '1-0'
+            e1score = 1.0
+            game_end = True
+            print(f'test engine with color {test_engine_color} wins on time')
+        # test engine wins as black
+        elif current_color and not test_engine_color:
+            gres = '0-1'
+            e1score = 1.0
+            game_end = True
+            print(f'test engine with color {test_engine_color} wins on time')
+
+    return game_end, gres, e1score
 
 
 def match(e1, e2, fen, test_param, base_param, output_game_file, btms=10000,
@@ -225,7 +257,6 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, btms=10000,
             min, sec = divmod(btms//1000, 60)
             incsec = incms/1000
             e.stdin.write(f'level 0 {min}:{sec} {incsec}\n')
-            print(f'level 0 {min}:{sec} {incsec}')
 
             e.stdin.write(f'setboard {fen}\n')
 
@@ -271,7 +302,7 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, btms=10000,
                     score = int(line.split()[1])  # cp
 
                 # Check end of game as claimed by engines.
-                game_endr, gresr, e1scorer = is_game_end(line, start_turn)
+                game_endr, gresr, e1scorer = is_game_end(line, test_engine_color)
                 if game_endr:
                     game_end, gres, e1score = game_endr, gresr, e1scorer
                     break
@@ -305,27 +336,10 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, btms=10000,
                     break
 
             # Time is over
-            if is_time_over[current_color]:
-                # test engine loses as white
-                if current_color and test_engine_color:
-                    gres = '0-1'
-                    e1score = 0.0
-                    print(f'test engine with color {test_engine_color} loses on time')
-                # test engine loses as black
-                elif not current_color and not test_engine_color:
-                    gres = '1-0'
-                    e1score = 0.0
-                    print(f'test engine with color {test_engine_color} loses on time')
-                # test engine wins as white
-                elif not current_color and test_engine_color:
-                    gres = '1-0'
-                    e1score = 1.0
-                    print(f'test engine with color {test_engine_color} wins on time')
-                # test engine wins as black
-                elif current_color and not test_engine_color:
-                    gres = '0-1'
-                    e1score = 1.0
-                    print(f'test engine with color {test_engine_color} wins on time')
+            game_endr, gresr, e1scorer = time_forfeit(
+                is_time_over[current_color], current_color, test_engine_color)
+            if game_endr:
+                gres, e1score = gresr, e1scorer
                 break
 
             side = not side
