@@ -11,7 +11,12 @@ import time
 import random
 import concurrent.futures
 from concurrent.futures import ProcessPoolExecutor
+import logging
 
+
+logging.basicConfig(filename='log_duel.txt', filemode='w',
+                    level=logging.DEBUG,
+                    format='%(asctime)s - %(levelname)s - %(message)s')
 
 class Timer:
     def __init__(self, base_time, inc_time):
@@ -63,6 +68,7 @@ def turn(fen):
 
 
 def save_game(outfn, fen, moves, e1, e2, start_turn, gres, termination=''):
+    logging.info('Saving game ...')
     with open(outfn, 'a') as f:
         f.write('[Event "Optimization test"]\n')
         f.write(f'[White "{e1 if start_turn else e2}"]\n')
@@ -79,6 +85,7 @@ def save_game(outfn, fen, moves, e1, e2, start_turn, gres, termination=''):
 
 
 def adjudicate_win(score_history, win_adj_move_num, side):
+    logging.info('Adjudicating game by win ...')
     ret, gres, e1score = False, '*', 0.0
 
     if len(score_history) >= win_adj_move_num:
@@ -108,6 +115,7 @@ def adjudicate_win(score_history, win_adj_move_num, side):
 
 
 def adjudicate_draw(score_history, draw_adj_move_num):
+    logging.info('Adjudicating game by draw ...')
     ret, gres, e1score = False, '*', 0.0
 
     if len(score_history) >= draw_adj_move_num:
@@ -131,6 +139,7 @@ def adjudicate_draw(score_history, draw_adj_move_num):
 
 
 def is_game_end(line, test_engine_color):
+    logging.info('Game ends by engine result comment')
     game_end, gres, e1score = False, '*', 0.0
 
     if '1-0' in line:
@@ -165,6 +174,7 @@ def param_to_dict(param):
 
 
 def time_forfeit(is_timeup, current_color, test_engine_color):
+    logging.info('Game ends by time forfeit')
     game_end, gres, e1score = False, '*', 0.0
 
     if is_timeup:
@@ -212,6 +222,8 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, btms=10000,
 
     # Start engine match, 2 games will be played.
     for gn in range(num_games):
+        logging.info(f'Match game no. {gn + 1}')
+        logging.info(f'Test engine plays as {"first" if gn % 2 == 0 else "second"} engine.')
 
         pe1 = subprocess.Popen(e1, stdin=subprocess.PIPE,
                                stdout=subprocess.PIPE,
@@ -250,15 +262,22 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, btms=10000,
 
         for e in eng:
             e.stdin.write('variant\n')
+            logging.debug('> variant')
+
             e.stdin.write('new\n')
+            logging.debug('> new')
+
             e.stdin.write('post\n')
+            logging.debug('> post')
 
             # Send level command.
             min, sec = divmod(btms//1000, 60)
             incsec = incms/1000
             e.stdin.write(f'level 0 {min}:{sec} {incsec}\n')
+            logging.debug(f'> level 0 {min}:{sec} {incsec}')
 
             e.stdin.write(f'setboard {fen}\n')
+            logging.debug(f'> setboard {fen}')
 
         num, side, move, line, game_end = 0, 0, None, '', False
         score_history, elapse_history, start_turn = [], [], turn(fen)
@@ -278,20 +297,29 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, btms=10000,
 
         # Start the game.
         while True:
+            assert timer[side].rem_cs() > 0
             eng[side].stdin.write(f'time {timer[side].rem_cs()}\n')
+            logging.debug(f'> time {timer[side].rem_cs()}')
+
             eng[side].stdin.write(f'otim {timer[not side].rem_cs()}\n')
+            logging.debug(f'> otim {timer[not side].rem_cs()}')
+
             t1 = time.perf_counter_ns()
 
             if num == 0:
                 eng[side].stdin.write('go\n')
+                logging.debug('> go')
             else:
                 move_hist.append(move)
                 eng[side].stdin.write(f'{move}\n')
+                logging.debug(f'> {move}')
 
             num += 1
 
             for eline in iter(eng[side].stdout.readline, ''):
                 line = eline.strip()
+
+                logging.debug(f'< {line}')
 
                 if is_show_search_info:
                     if not line.startswith('#'):
@@ -319,6 +347,7 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, btms=10000,
                         is_time_over[current_color] = True
                         termination = 'forfeits on time'
                         print('time is over')
+                        logging.info('time is over')
                     break
 
             if game_end:
@@ -333,6 +362,7 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, btms=10000,
                 if game_endr:
                     gres, e1score = gresr, e1scorer
                     print('Game ends by adjudication')
+                    logging.info('Game ends by adjudication')
                     break
 
             # Time is over
@@ -351,6 +381,7 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, btms=10000,
 
         for e in eng:
             e.stdin.write('quit\n')
+            logging.debug('> quit')
 
         print(e1score)
         all_e1score += e1score
