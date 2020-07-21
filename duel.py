@@ -139,7 +139,6 @@ def adjudicate_draw(score_history, draw_adj_move_num):
 
 
 def is_game_end(line, test_engine_color):
-    logging.info('Game ends by engine result comment')
     game_end, gres, e1score = False, '*', 0.0
 
     if '1-0' in line:
@@ -263,6 +262,14 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, btms=10000,
         for e in eng:
             e.stdin.write('variant\n')
             logging.debug('> variant')
+
+            e.stdin.write('ping 1\n')
+            logging.debug('> ping 1')
+            for eline in iter(e.stdout.readline, ''):
+                line = eline.strip()
+                logging.debug(f'< {line}')
+                if 'pong' in line:
+                    break
 
             e.stdin.write('new\n')
             logging.debug('> new')
