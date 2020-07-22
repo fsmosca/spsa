@@ -173,7 +173,6 @@ def param_to_dict(param):
 
 
 def time_forfeit(is_timeup, current_color, test_engine_color):
-    logging.info('Game ends by time forfeit')
     game_end, gres, e1score = False, '*', 0.0
 
     if is_timeup:
@@ -201,6 +200,9 @@ def time_forfeit(is_timeup, current_color, test_engine_color):
             e1score = 1.0
             game_end = True
             print(f'test engine with color {test_engine_color} wins on time')
+
+    if game_end:
+        logging.info('Game ends by time forfeit.')
 
     return game_end, gres, e1score
 
