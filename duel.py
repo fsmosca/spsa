@@ -205,8 +205,8 @@ def time_forfeit(is_timeup, current_color, test_engine_color):
     return game_end, gres, e1score
 
 
-def match(e1, e2, fen, test_param, base_param, output_game_file, btms=10000,
-          incms=100, num_games=2, is_adjudicate_game=False):
+def match(e1, e2, fen, test_param, base_param, output_game_file, variant,
+          btms=10000, incms=100, num_games=2, is_adjudicate_game=False):
     """
     Run an engine match between e1 and e2. Save the game and print result
     from e1 perspective.
@@ -260,8 +260,8 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, btms=10000,
                     print(f'base_engine: set {k} to {v}')
 
         for e in eng:
-            e.stdin.write('variant\n')
-            logging.debug('> variant')
+            e.stdin.write(f'variant {variant}\n')
+            logging.debug(f'> variant {variant}')
 
             e.stdin.write('ping 1\n')
             logging.debug('> ping 1')
@@ -398,7 +398,7 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, btms=10000,
 
 def round_match(fen, e1, e2, test_param, base_param, output_game_file,
                 btms, incms, games_per_match, is_adjudicate_game,
-                posround=1):
+                variant, posround=1):
     """
     Play a match between e1 and e2 using fen as starting position. By default
     2 games will be played color is reversed. If posround is more than 1, the
@@ -409,7 +409,7 @@ def round_match(fen, e1, e2, test_param, base_param, output_game_file,
 
     for _ in range(posround):
         res = match(e1, e2, fen, test_param, base_param, output_game_file,
-                    btms=btms, incms=incms, num_games=games_per_match,
+                    variant, btms=btms, incms=incms, num_games=games_per_match,
                     is_adjudicate_game=is_adjudicate_game)
         test_engine_score.append(res)
 
@@ -456,6 +456,7 @@ def main():
     parser.add_argument('--concurrency', required=False,
                         help='number of game to run in parallel, default=1',
                         type=int, default=1)
+    parser.add_argument('--variant', required=True, help='name of the variant')
 
     args = parser.parse_args()
 
@@ -487,7 +488,8 @@ def main():
             job = executor.submit(round_match, fen, e1, e2,
                                   test_param, base_param, output_game_file,
                                   args.tc_base_timems, args.tc_inc_timems,
-                                  games_per_match, args.adjudicate, posround)
+                                  games_per_match, args.adjudicate, args.variant,
+                                  posround)
             joblist.append(job)
 
         for future in concurrent.futures.as_completed(joblist):
