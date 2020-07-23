@@ -12,6 +12,7 @@ import random
 import concurrent.futures
 from concurrent.futures import ProcessPoolExecutor
 import logging
+from statistics import mean
 
 
 logging.basicConfig(filename='log_duel.txt', filemode='w',
@@ -481,6 +482,7 @@ def main():
 
     # Start match
     joblist = []
+    test_engine_score_list = []
 
     # Use Python 3.8 or higher
     with ProcessPoolExecutor(max_workers=args.concurrency) as executor:
@@ -496,13 +498,15 @@ def main():
 
         for future in concurrent.futures.as_completed(joblist):
             try:
-                test_engine_score = future.result()
+                test_engine_score = future.result()[0]
+                test_engine_score_list.append(test_engine_score)
                 print(f'test_engine_score: {test_engine_score}')
             except concurrent.futures.process.BrokenProcessPool as ex:
                 print(f'exception: {ex}')
 
     # The match is done, print score perf of test engine.
-    print(f'{sum(test_engine_score)/len(test_engine_score)}')
+    print(f'test engine score list: {test_engine_score_list}')
+    print(f'final test score: {mean(test_engine_score_list)}')
     print(f'elapse: {time.perf_counter() - t1:0.2f}s')
 
 
