@@ -243,8 +243,13 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, variant,
             eng = [pe2, pe1]
 
         for i, e in enumerate(eng):
+            name_color = ['test' if gn % 2 == 0 and i == 0 else 'base',
+                          'test' if gn % 2 == 1 and i == 1 else 'base']
             e.stdin.write('xboard\n')
+            logging.debug(f'{name_color[i]} > xboard')
             e.stdin.write('protover 2\n')
+            logging.debug(f'{name_color[i]} > protover 2')
+
             for eline in iter(e.stdout.readline, ''):
                 line = eline.strip()
                 if 'done=1' in line:
@@ -262,32 +267,34 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, variant,
                     e.stdin.write(f'option {k}={v}\n')
                     print(f'base_engine: set {k} to {v}')
 
-        for e in eng:
+        for i, e in enumerate(eng):
+            name_color = ['test' if gn % 2 == 0 and i == 0 else 'base',
+                          'test' if gn % 2 == 1 and i == 1 else 'base']
             e.stdin.write(f'variant {variant}\n')
-            logging.debug(f'> variant {variant}')
+            logging.debug(f'{name_color[i]} > variant {variant}')
 
             e.stdin.write('ping 1\n')
-            logging.debug('> ping 1')
+            logging.debug(f'{name_color[i]} > ping 1')
             for eline in iter(e.stdout.readline, ''):
                 line = eline.strip()
-                logging.debug(f'< {line}')
+                logging.debug(f'{name_color[i]} < {line}')
                 if 'pong' in line:
                     break
 
             e.stdin.write('new\n')
-            logging.debug('> new')
+            logging.debug(f'{name_color[i]} > new')
 
             e.stdin.write('post\n')
-            logging.debug('> post')
+            logging.debug(f'{name_color[i]} > post')
 
             # Send level command.
             min, sec = divmod(btms//1000, 60)
             incsec = incms/1000
             e.stdin.write(f'level 0 {min}:{sec} {incsec}\n')
-            logging.debug(f'> level 0 {min}:{sec} {incsec}')
+            logging.debug(f'{name_color[i]} > level 0 {min}:{sec} {incsec}')
 
             e.stdin.write(f'setboard {fen}\n')
-            logging.debug(f'> setboard {fen}')
+            logging.debug(f'{name_color[i]} > setboard {fen}')
 
         num, side, move, line, game_end = 0, 0, None, '', False
         score_history, elapse_history, start_turn = [], [], turn(fen)
@@ -309,27 +316,27 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, variant,
         while True:
             assert timer[side].rem_cs() > 0
             eng[side].stdin.write(f'time {timer[side].rem_cs()}\n')
-            logging.debug(f'> time {timer[side].rem_cs()}')
+            logging.debug(f'{name_color[side]} > time {timer[side].rem_cs()}')
 
             eng[side].stdin.write(f'otim {timer[not side].rem_cs()}\n')
-            logging.debug(f'> otim {timer[not side].rem_cs()}')
+            logging.debug(f'{name_color[side]} > otim {timer[not side].rem_cs()}')
 
             t1 = time.perf_counter_ns()
 
             if num == 0:
                 eng[side].stdin.write('go\n')
-                logging.debug('> go')
+                logging.debug(f'{name_color[side]} > go')
             else:
                 move_hist.append(move)
                 eng[side].stdin.write(f'{move}\n')
-                logging.debug(f'> {move}')
+                logging.debug(f'{name_color[side]} > {move}')
 
             num += 1
 
             for eline in iter(eng[side].stdout.readline, ''):
                 line = eline.strip()
 
-                logging.debug(f'< {line}')
+                logging.debug(f'{name_color[side]} < {line}')
 
                 if is_show_search_info:
                     if not line.startswith('#'):
