@@ -398,9 +398,11 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, variant,
             save_game(output_game_file, fen, move_hist, name_color[0],
                       name_color[1], start_turn, gres, termination)
 
-        for e in eng:
+        for i, e in enumerate(eng):
+            name_color = ['test' if gn % 2 == 0 and i == 0 else 'base',
+                          'test' if gn % 2 == 1 and i == 1 else 'base']
             e.stdin.write('quit\n')
-            logging.debug('> quit')
+            logging.debug(f'{name_color[i]} > quit')
 
         print(e1score)
         all_e1score += e1score
@@ -492,6 +494,7 @@ def main():
     # Start match
     joblist = []
     test_engine_score_list = []
+    match_done = 0
 
     # Use Python 3.8 or higher
     with ProcessPoolExecutor(max_workers=args.concurrency) as executor:
@@ -510,6 +513,8 @@ def main():
                 test_engine_score = future.result()[0]
                 test_engine_score_list.append(test_engine_score)
                 print(f'test_engine_score: {test_engine_score}')
+                match_done += 1
+                print(f'match done: {match_done}')
             except concurrent.futures.process.BrokenProcessPool as ex:
                 print(f'exception: {ex}')
 
