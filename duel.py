@@ -86,7 +86,7 @@ def save_game(outfn, fen, moves, e1, e2, start_turn, gres, termination=''):
 
 
 def adjudicate_win(score_history, win_adj_move_num, side):
-    logging.info('Adjudicating game by win ...')
+    logging.info('Try adjudicating this game by win ...')
     ret, gres, e1score = False, '*', 0.0
 
     if len(score_history) >= win_adj_move_num:
@@ -106,17 +106,19 @@ def adjudicate_win(score_history, win_adj_move_num, side):
         if fwin_cnt >= 3:
             gres = '1-0' if side else '0-1'
             e1score = 1.0
+            logging.info(f'{"White" if side else "Black"} wins by adjudication.')
             ret = True
         if swin_cnt >= 3:
             gres = '1-0' if side else '0-1'
             e1score = 0
+            logging.info(f'{"White" if side else "Black"} wins by adjudication.')
             ret = True
 
     return ret, gres, e1score
 
 
 def adjudicate_draw(score_history, draw_adj_move_num):
-    logging.info('Adjudicating game by draw ...')
+    logging.info('Try adjudicating this game by draw ...')
     ret, gres, e1score = False, '*', 0.0
 
     if len(score_history) >= draw_adj_move_num:
@@ -134,6 +136,7 @@ def adjudicate_draw(score_history, draw_adj_move_num):
         if draw_cnt >= 3:
             gres = '1/2-1/2'
             e1score = 0.5
+            logging.info(f'Draw by adjudication.')
             ret = True
 
     return ret, gres, e1score
@@ -379,7 +382,6 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, variant,
                 if game_endr:
                     gres, e1score = gresr, e1scorer
                     print('Game ends by adjudication')
-                    logging.info('Game ends by adjudication')
                     break
 
             # Time is over
