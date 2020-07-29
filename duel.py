@@ -225,33 +225,40 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, variant,
     all_e1score = 0.0
     is_show_search_info = False
 
+    pe1_d = {'proc': None, 'file': e1['cmd'], 'name': e1['name']}
+    pe2_d = {'proc': None, 'file': e2['cmd'], 'name': e2['name']}
+
     # Start engine match, 2 games will be played.
     for gn in range(num_games):
         logging.info(f'Match game no. {gn + 1}')
         logging.info(f'Test engine plays as {"first" if gn % 2 == 0 else "second"} engine.')
 
-        pe1 = subprocess.Popen(e1, stdin=subprocess.PIPE,
+        pe1 = subprocess.Popen(pe1_d['file'], stdin=subprocess.PIPE,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT,
                                universal_newlines=True, bufsize=0)
 
-        pe2 = subprocess.Popen(e2, stdin=subprocess.PIPE,
+        pe2 = subprocess.Popen(pe2_d['file'], stdin=subprocess.PIPE,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT,
                                universal_newlines=True, bufsize=0)
+
+        pe1_d.update({'proc': pe1})
+        pe2_d.update({'proc': pe2})
 
         if gn % 2 == 0:
-            eng = [pe1, pe2]
+            eng = [pe1_d, pe2_d]
         else:
-            eng = [pe2, pe1]
+            eng = [pe2_d, pe1_d]
 
-        for i, e in enumerate(eng):
-            name_color = ['test' if gn % 2 == 0 and i == 0 else 'base',
-                          'test' if gn % 2 == 1 and i == 1 else 'base']
+        for i, pr in enumerate(eng):
+            e = pr['proc']
+            pn = pr['name']
+
             e.stdin.write('xboard\n')
-            logging.debug(f'{name_color[i]} > xboard')
+            logging.debug(f'{pn} > xboard')
             e.stdin.write('protover 2\n')
-            logging.debug(f'{name_color[i]} > protover 2')
+            logging.debug(f'{pn} > protover 2')
 
             for eline in iter(e.stdout.readline, ''):
                 line = eline.strip()
@@ -270,44 +277,41 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, variant,
                     e.stdin.write(f'option {k}={v}\n')
                     print(f'base_engine: set {k} to {v}')
 
-        for i, e in enumerate(eng):
-            name_color = ['test' if gn % 2 == 0 and i == 0 else 'base',
-                          'test' if gn % 2 == 1 and i == 1 else 'base']
+        for i, pr in enumerate(eng):
+            e = pr['proc']
+            pn = pr['name']
+
             e.stdin.write(f'variant {variant}\n')
-            logging.debug(f'{name_color[i]} > variant {variant}')
+            logging.debug(f'{pn} > variant {variant}')
 
             e.stdin.write('ping 1\n')
-            logging.debug(f'{name_color[i]} > ping 1')
+            logging.debug(f'{pn} > ping 1')
             for eline in iter(e.stdout.readline, ''):
                 line = eline.strip()
-                logging.debug(f'{name_color[i]} < {line}')
+                logging.debug(f'{pn} < {line}')
                 if 'pong' in line:
                     break
 
             e.stdin.write('new\n')
-            logging.debug(f'{name_color[i]} > new')
+            logging.debug(f'{pn} > new')
 
             e.stdin.write('post\n')
-            logging.debug(f'{name_color[i]} > post')
+            logging.debug(f'{pn} > post')
 
             # Send level command.
             min, sec = divmod(btms//1000, 60)
             incsec = incms/1000
             e.stdin.write(f'level 0 {min}:{sec} {incsec}\n')
-            logging.debug(f'{name_color[i]} > level 0 {min}:{sec} {incsec}')
+            logging.debug(f'{pn} > level 0 {min}:{sec} {incsec}')
 
             e.stdin.write(f'setboard {fen}\n')
-            logging.debug(f'{name_color[i]} > setboard {fen}')
+            logging.debug(f'{pn} > setboard {fen}')
 
         num, side, move, line, game_end = 0, 0, None, '', False
         score_history, elapse_history, start_turn = [], [], turn(fen)
         gres, e1score = '*', 0.0
         is_time_over = [False, False]
         current_color = start_turn  # True if white to move
-
-        # The name color index 0 is white.
-        name_color = ['test' if gn % 2 == 0 and start_turn else 'base',
-                      'test' if gn % 2 == 1 and start_turn else 'base']
 
         test_engine_color = True if start_turn and gn % 2 == 0 else False
         termination = ''
@@ -318,28 +322,28 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, variant,
         # Start the game.
         while True:
             assert timer[side].rem_cs() > 0
-            eng[side].stdin.write(f'time {timer[side].rem_cs()}\n')
-            logging.debug(f'{name_color[side]} > time {timer[side].rem_cs()}')
+            eng[side]['proc'].stdin.write(f'time {timer[side].rem_cs()}\n')
+            logging.debug(f'{eng[side]["name"]} > time {timer[side].rem_cs()}')
 
-            eng[side].stdin.write(f'otim {timer[not side].rem_cs()}\n')
-            logging.debug(f'{name_color[side]} > otim {timer[not side].rem_cs()}')
+            eng[side]['proc'].stdin.write(f'otim {timer[not side].rem_cs()}\n')
+            logging.debug(f'{eng[side]["name"]} > otim {timer[not side].rem_cs()}')
 
             t1 = time.perf_counter_ns()
 
             if num == 0:
-                eng[side].stdin.write('go\n')
-                logging.debug(f'{name_color[side]} > go')
+                eng[side]['proc'].stdin.write('go\n')
+                logging.debug(f'{eng[side]["name"]} > go')
             else:
                 move_hist.append(move)
-                eng[side].stdin.write(f'{move}\n')
-                logging.debug(f'{name_color[side]} > {move}')
+                eng[side]['proc'].stdin.write(f'{move}\n')
+                logging.debug(f'{eng[side]["name"]} > {move}')
 
             num += 1
 
-            for eline in iter(eng[side].stdout.readline, ''):
+            for eline in iter(eng[side]['proc'].stdout.readline, ''):
                 line = eline.strip()
 
-                logging.debug(f'{name_color[side]} < {line}')
+                logging.debug(f'{eng[side]["name"]} < {line}')
 
                 if is_show_search_info:
                     if not line.startswith('#'):
@@ -381,7 +385,7 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, variant,
                         score_history, draw_adj_move_num)
                 if game_endr:
                     gres, e1score = gresr, e1scorer
-                    print('Game ends by adjudication')
+                    print(f'Game ends by adjudication, side is {start_turn}')
                     break
 
             # Time is over
@@ -395,14 +399,12 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, variant,
             current_color = not current_color
 
         if output_game_file is not None:
-            save_game(output_game_file, fen, move_hist, name_color[0],
-                      name_color[1], start_turn, gres, termination)
+            save_game(output_game_file, fen, move_hist, eng[0]["name"],
+                      eng[1]["name"], start_turn, gres, termination)
 
         for i, e in enumerate(eng):
-            name_color = ['test' if gn % 2 == 0 and i == 0 else 'base',
-                          'test' if gn % 2 == 1 and i == 1 else 'base']
-            e.stdin.write('quit\n')
-            logging.debug(f'{name_color[i]} > quit')
+            e['proc'].stdin.write('quit\n')
+            logging.debug(f'{e["name"]} > quit')
 
         print(e1score)
         all_e1score += e1score
@@ -473,15 +475,15 @@ def main():
     args = parser.parse_args()
 
     # Define engines.
-    e1, e2 = None, None
+    e1, e2 = {'cmd': None, 'name': 'test'}, {'cmd': None, 'name': 'base'}
     for i, eng_opt_val in enumerate(args.engine):
         for value in eng_opt_val:
             if i == 0 and 'cmd=' in value:
-                e1 = value.split('=')[1]
+                e1.update({'cmd': value.split('=')[1]})
             elif i == 1 and 'cmd=' in value:
-                e2 = value.split('=')[1]
+                e2.update({'cmd': value.split('=')[1]})
 
-    if e1 is None or e2 is None:
+    if e1['cmd'] is None or e2['cmd'] is None:
         print('Error, engines are not properly defined!')
         return
 
