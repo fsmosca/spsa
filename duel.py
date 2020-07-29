@@ -19,6 +19,7 @@ logging.basicConfig(filename='log_duel.txt', filemode='w',
                     level=logging.DEBUG,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
+
 class Timer:
     def __init__(self, base_time, inc_time):
         """
@@ -136,7 +137,7 @@ def adjudicate_draw(score_history, draw_adj_move_num):
         if draw_cnt >= 3:
             gres = '1/2-1/2'
             e1score = 0.5
-            logging.info(f'Draw by adjudication.')
+            logging.info('Draw by adjudication.')
             ret = True
 
     return ret, gres, e1score
@@ -211,8 +212,8 @@ def time_forfeit(is_timeup, current_color, test_engine_color):
     return game_end, gres, e1score
 
 
-def match(e1, e2, fen, test_param, base_param, output_game_file, variant,
-          btms=10000, incms=100, num_games=2, is_adjudicate_game=False):
+def match(e1, e2, fen, output_game_file, variant, btms=10000, incms=100,
+          num_games=2, is_adjudicate_game=False):
     """
     Run an engine match between e1 and e2. Save the game and print result
     from e1 perspective.
@@ -225,31 +226,28 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, variant,
     all_e1score = 0.0
     is_show_search_info = False
 
-    pe1_d = {'proc': None, 'file': e1['cmd'], 'name': e1['name']}
-    pe2_d = {'proc': None, 'file': e2['cmd'], 'name': e2['name']}
-
     # Start engine match, 2 games will be played.
     for gn in range(num_games):
         logging.info(f'Match game no. {gn + 1}')
         logging.info(f'Test engine plays as {"first" if gn % 2 == 0 else "second"} engine.')
 
-        pe1 = subprocess.Popen(pe1_d['file'], stdin=subprocess.PIPE,
+        pe1 = subprocess.Popen(e1['cmd'], stdin=subprocess.PIPE,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT,
                                universal_newlines=True, bufsize=0)
 
-        pe2 = subprocess.Popen(pe2_d['file'], stdin=subprocess.PIPE,
+        pe2 = subprocess.Popen(e2['cmd'], stdin=subprocess.PIPE,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT,
                                universal_newlines=True, bufsize=0)
 
-        pe1_d.update({'proc': pe1})
-        pe2_d.update({'proc': pe2})
+        e1.update({'proc': pe1})
+        e2.update({'proc': pe2})
 
         if gn % 2 == 0:
-            eng = [pe1_d, pe2_d]
+            eng = [e1, e2]
         else:
-            eng = [pe2_d, pe1_d]
+            eng = [e2, e1]
 
         for i, pr in enumerate(eng):
             e = pr['proc']
@@ -265,17 +263,10 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, variant,
                 if 'done=1' in line:
                     break
 
-            # Set test param to e1
-            if (i == 0 and gn % 2 == 0) or (i == 1 and gn % 2 == 1):
-                for k, v in test_param.items():
-                    e.stdin.write(f'option {k}={v}\n')
-                    print(f'test_engine: set {k} to {v}')
-
-            # Set base param to e2
-            if (i == 1 and gn % 2 == 0) or (i == 0 and gn % 2 == 1):
-                for k, v in base_param.items():
-                    e.stdin.write(f'option {k}={v}\n')
-                    print(f'base_engine: set {k} to {v}')
+            # Set param to engines.
+            for k, v in pr['opt'].items():
+                e.stdin.write(f'option {k}={v}\n')
+                print(f'{pn} -> option {k}={v}')
 
         for i, pr in enumerate(eng):
             e = pr['proc']
@@ -412,9 +403,8 @@ def match(e1, e2, fen, test_param, base_param, output_game_file, variant,
     return all_e1score/num_games
 
 
-def round_match(fen, e1, e2, test_param, base_param, output_game_file,
-                btms, incms, games_per_match, is_adjudicate_game,
-                variant, posround=1):
+def round_match(fen, e1, e2, output_game_file, btms, incms, games_per_match,
+                is_adjudicate_game, variant, posround=1):
     """
     Play a match between e1 and e2 using fen as starting position. By default
     2 games will be played color is reversed. If posround is more than 1, the
@@ -424,8 +414,8 @@ def round_match(fen, e1, e2, test_param, base_param, output_game_file,
     test_engine_score = []
 
     for _ in range(posround):
-        res = match(e1, e2, fen, test_param, base_param, output_game_file,
-                    variant, btms=btms, incms=incms, num_games=games_per_match,
+        res = match(e1, e2, fen, output_game_file, variant, btms=btms,
+                    incms=incms, num_games=games_per_match,
                     is_adjudicate_game=is_adjudicate_game)
         test_engine_score.append(res)
 
@@ -447,16 +437,6 @@ def main():
                         '-engine cmd=engine1.exe name=test ... --engine cmd=engine2.exe name=base')
     parser.add_argument('--start-fen', required=True,
                         help='fen file of startpos for the match')
-    parser.add_argument('--test-param', required=True,
-                        help='parameters to be optimized\n'
-                             'Example:\n'
-                             '"QueenOp 800 500 1500 1000, RookOp ..."\n'
-                             'parname value min max factor')
-    parser.add_argument('--base-param', required=True,
-                        help='parameters for base_engine\n'
-                             'Example:\n'
-                             '"QueenOp 800 500 1500 1000, RookOp ..."\n'
-                             'parname value min max factor')
     parser.add_argument('--tc-base-timems', required=False,
                         help='base time in millisec, default=5000',
                         type=int, default=5000)
@@ -474,14 +454,30 @@ def main():
 
     args = parser.parse_args()
 
-    # Define engines.
-    e1, e2 = {'cmd': None, 'name': 'test'}, {'cmd': None, 'name': 'base'}
+    # Define engine files, name and options.
+    ed1, ed2 = {}, {}
+    e1 = {'proc': None, 'cmd': None, 'name': 'test', 'opt': ed1}
+    e2 = {'proc': None, 'cmd': None, 'name': 'base', 'opt': ed2}
     for i, eng_opt_val in enumerate(args.engine):
         for value in eng_opt_val:
-            if i == 0 and 'cmd=' in value:
-                e1.update({'cmd': value.split('=')[1]})
-            elif i == 1 and 'cmd=' in value:
-                e2.update({'cmd': value.split('=')[1]})
+            if i == 0:
+                if 'cmd=' in value:
+                    e1.update({'cmd': value.split('=')[1]})
+                elif 'option.' in value:
+                    # Todo: support float value
+                    # option.QueenValueOpening=1000
+                    optn = value.split('option.')[1].split('=')[0]
+                    optv = int(value.split('option.')[1].split('=')[1])
+                    ed1.update({optn: optv})
+                    e1.update({'opt': ed1})
+            elif i == 1:
+                if 'cmd=' in value:
+                    e2.update({'cmd': value.split('=')[1]})
+                elif 'option.' in value:
+                    optn = value.split('option.')[1].split('=')[0]
+                    optv = int(value.split('option.')[1].split('=')[1])
+                    ed2.update({optn: optv})
+                    e2.update({'opt': ed2})
 
     if e1['cmd'] is None or e2['cmd'] is None:
         print('Error, engines are not properly defined!')
@@ -491,10 +487,6 @@ def main():
     is_random_startpos = True
     games_per_match = 2
     posround = 1  # Number of times the same position is played
-
-    # Convert param to a dict
-    test_param = param_to_dict(args.test_param)
-    base_param = param_to_dict(args.base_param)
 
     fens = get_fen_list(fen_file, is_random_startpos)
 
@@ -513,10 +505,9 @@ def main():
             if i >= args.round:
                 break
             job = executor.submit(round_match, fen, e1, e2,
-                                  test_param, base_param, output_game_file,
-                                  args.tc_base_timems, args.tc_inc_timems,
-                                  games_per_match, args.adjudicate, args.variant,
-                                  posround)
+                                  output_game_file, args.tc_base_timems,
+                                  args.tc_inc_timems, games_per_match,
+                                  args.adjudicate, args.variant, posround)
             joblist.append(job)
 
         for future in concurrent.futures.as_completed(joblist):
