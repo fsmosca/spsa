@@ -439,12 +439,10 @@ def main():
                              'since each engine will play the start side\n'
                              'of the start position',
                         type=int, default=1)
-    parser.add_argument('--test-engine', required=True,
-                        help='engine path/file or file of the engine\n'
-                             'to be optmized')
-    parser.add_argument('--base-engine', required=True,
-                        help='engine path/file or file of the engine\n'
-                             'as opponent to test engine')
+    parser.add_argument('-engine', nargs='*', action='append', required=True,
+                        help='This option is used to define the engines.\n'
+                        'Example:\n'
+                        '-engine cmd=engine1.exe name=test ... --engine cmd=engine2.exe name=base')
     parser.add_argument('--start-fen', required=True,
                         help='fen file of startpos for the match')
     parser.add_argument('--test-param', required=True,
@@ -474,8 +472,19 @@ def main():
 
     args = parser.parse_args()
 
-    e1 = args.test_engine
-    e2 = args.base_engine
+    # Define engines.
+    e1, e2 = None, None
+    for i, eng_opt_val in enumerate(args.engine):
+        for value in eng_opt_val:
+            if i == 0 and 'cmd=' in value:
+                e1 = value.split('=')[1]
+            elif i == 1 and 'cmd=' in value:
+                e2 = value.split('=')[1]
+
+    if e1 is None or e2 is None:
+        print('Error, engines are not properly defined!')
+        return
+
     fen_file = args.start_fen
     is_random_startpos = True
     games_per_match = 2
