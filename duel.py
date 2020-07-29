@@ -330,6 +330,7 @@ def match(e1, e2, fen, output_game_file, variant, btms=10000, incms=100,
                 logging.debug(f'{eng[side]["name"]} > {move}')
 
             num += 1
+            score = None
 
             for eline in iter(eng[side]['proc'].stdout.readline, ''):
                 line = eline.strip()
@@ -356,7 +357,7 @@ def match(e1, e2, fen, output_game_file, variant, btms=10000, incms=100,
                     elapse_history.append(elapse)
 
                     move = line.split('move ')[1]
-                    score_history.append(score)
+                    score_history.append(score if score is not None else 0)
 
                     if timer[side].is_zero_time():
                         is_time_over[current_color] = True
