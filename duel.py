@@ -234,12 +234,12 @@ def match(e1, e2, fen, output_game_file, variant, btms=10000, incms=100,
         pe1 = subprocess.Popen(e1['cmd'], stdin=subprocess.PIPE,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT,
-                               universal_newlines=True, bufsize=0)
+                               universal_newlines=True, bufsize=1)
 
         pe2 = subprocess.Popen(e2['cmd'], stdin=subprocess.PIPE,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT,
-                               universal_newlines=True, bufsize=0)
+                               universal_newlines=True, bufsize=1)
 
         e1.update({'proc': pe1})
         e2.update({'proc': pe2})
