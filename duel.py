@@ -290,10 +290,10 @@ def match(e1, e2, fen, output_game_file, variant, btms=10000, incms=100,
             logging.debug(f'{pn} > post')
 
             # Send level command.
-            min, sec = divmod(btms//1000, 60)
+            minv, sec = divmod(btms//1000, 60)
             incsec = incms/1000
-            e.stdin.write(f'level 0 {min}:{sec} {incsec}\n')
-            logging.debug(f'{pn} > level 0 {min}:{sec} {incsec}')
+            e.stdin.write(f'level 0 {minv}:{sec} {incsec}\n')
+            logging.debug(f'{pn} > level 0 {minv}:{sec} {incsec}')
 
             e.stdin.write(f'setboard {fen}\n')
             logging.debug(f'{pn} > setboard {fen}')
