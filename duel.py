@@ -212,14 +212,11 @@ def time_forfeit(is_timeup, current_color, test_engine_color):
     return game_end, gres, e1score
 
 
-def match(e1, e2, fen, output_game_file, variant, btms=10000, incms=100,
-          num_games=2, is_adjudicate_game=False):
+def match(e1, e2, fen, output_game_file, variant, num_games=2,
+          is_adjudicate_game=False):
     """
     Run an engine match between e1 and e2. Save the game and print result
     from e1 perspective.
-
-    :btms: base time in ms
-    :incms: increment time in ms
     """
     win_adj_move_num, draw_adj_move_num = 40, 60
     move_hist = []
@@ -268,6 +265,7 @@ def match(e1, e2, fen, output_game_file, variant, btms=10000, incms=100,
                 e.stdin.write(f'option {k}={v}\n')
                 print(f'{pn} -> option {k}={v}')
 
+        timer = []
         for i, pr in enumerate(eng):
             e = pr['proc']
             pn = pr['name']
@@ -289,11 +287,17 @@ def match(e1, e2, fen, output_game_file, variant, btms=10000, incms=100,
             e.stdin.write('post\n')
             logging.debug(f'{pn} > post')
 
-            # Send level command.
-            minv, sec = divmod(btms//1000, 60)
-            incsec = incms/1000
-            e.stdin.write(f'level 0 {minv}:{sec} {incsec}\n')
-            logging.debug(f'{pn} > level 0 {minv}:{sec} {incsec}')
+            # Define time control, base time in minutes and inc in seconds.
+            tcd = pr['tc']
+            basev = float(tcd.split('/')[1].split('+')[0].strip())
+            incv = float(tcd.split('/')[1].split('+')[1].strip())
+
+            # Send level command to each engine.
+            e.stdin.write(f'level 0 {int(basev)} {int(incv)}\n')
+            logging.debug(f'{pn} > level 0 {int(basev)} {int(incv)}')
+
+            # Setup Timer, convert base in minutes to ms and inc in sec to ms
+            timer.append(Timer(int(basev * 60 * 1000), int(incv * 1000)))
 
             e.stdin.write(f'setboard {fen}\n')
             logging.debug(f'{pn} > setboard {fen}')
@@ -306,9 +310,6 @@ def match(e1, e2, fen, output_game_file, variant, btms=10000, incms=100,
 
         test_engine_color = True if start_turn and gn % 2 == 0 else False
         termination = ''
-
-        # Setup Timer for test and base engine.
-        timer = [Timer(btms, incms), Timer(btms, incms)]
 
         # Start the game.
         while True:
@@ -404,7 +405,7 @@ def match(e1, e2, fen, output_game_file, variant, btms=10000, incms=100,
     return all_e1score/num_games
 
 
-def round_match(fen, e1, e2, output_game_file, btms, incms, games_per_match,
+def round_match(fen, e1, e2, output_game_file, games_per_match,
                 is_adjudicate_game, variant, posround=1):
     """
     Play a match between e1 and e2 using fen as starting position. By default
@@ -415,8 +416,8 @@ def round_match(fen, e1, e2, output_game_file, btms, incms, games_per_match,
     test_engine_score = []
 
     for _ in range(posround):
-        res = match(e1, e2, fen, output_game_file, variant, btms=btms,
-                    incms=incms, num_games=games_per_match,
+        res = match(e1, e2, fen, output_game_file, variant,
+                    num_games=games_per_match,
                     is_adjudicate_game=is_adjudicate_game)
         test_engine_score.append(res)
 
@@ -438,12 +439,6 @@ def main():
                         '-engine cmd=engine1.exe name=test ... --engine cmd=engine2.exe name=base')
     parser.add_argument('--start-fen', required=True,
                         help='fen file of startpos for the match')
-    parser.add_argument('--tc-base-timems', required=False,
-                        help='base time in millisec, default=5000',
-                        type=int, default=5000)
-    parser.add_argument('--tc-inc-timems', required=False,
-                        help='increment in millisec, default=0',
-                        type=int, default=0)
     parser.add_argument('--adjudicate', action='store_true',
                         help='adjudicate the game')
     parser.add_argument('--pgn-output-file', required=False,
@@ -457,8 +452,8 @@ def main():
 
     # Define engine files, name and options.
     ed1, ed2 = {}, {}
-    e1 = {'proc': None, 'cmd': None, 'name': 'test', 'opt': ed1}
-    e2 = {'proc': None, 'cmd': None, 'name': 'base', 'opt': ed2}
+    e1 = {'proc': None, 'cmd': None, 'name': 'test', 'opt': ed1, 'tc': ''}
+    e2 = {'proc': None, 'cmd': None, 'name': 'base', 'opt': ed2, 'tc': ''}
     for i, eng_opt_val in enumerate(args.engine):
         for value in eng_opt_val:
             if i == 0:
@@ -471,6 +466,8 @@ def main():
                     optv = int(value.split('option.')[1].split('=')[1])
                     ed1.update({optn: optv})
                     e1.update({'opt': ed1})
+                elif 'tc' in value:
+                    e1.update({'tc': value.split('=')[1]})
             elif i == 1:
                 if 'cmd=' in value:
                     e2.update({'cmd': value.split('=')[1]})
@@ -479,9 +476,17 @@ def main():
                     optv = int(value.split('option.')[1].split('=')[1])
                     ed2.update({optn: optv})
                     e2.update({'opt': ed2})
+                elif 'tc' in value:
+                    e2.update({'tc': value.split('=')[1]})
 
+    # Exit if engine file is not defined.
     if e1['cmd'] is None or e2['cmd'] is None:
         print('Error, engines are not properly defined!')
+        return
+
+    # Exit if tc or time control is not defined.
+    if e1['tc'] == '' or e2['tc'] == '':
+        print('Error, tc or time control is not properly defined!')
         return
 
     fen_file = args.start_fen
@@ -506,8 +511,7 @@ def main():
             if i >= args.round:
                 break
             job = executor.submit(round_match, fen, e1, e2,
-                                  output_game_file, args.tc_base_timems,
-                                  args.tc_inc_timems, games_per_match,
+                                  output_game_file, games_per_match,
                                   args.adjudicate, args.variant, posround)
             joblist.append(job)
 
