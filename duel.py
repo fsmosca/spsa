@@ -289,15 +289,26 @@ def match(e1, e2, fen, output_game_file, variant, num_games=2,
 
             # Define time control, base time in minutes and inc in seconds.
             tcd = pr['tc']
-            basev = float(tcd.split('/')[1].split('+')[0].strip())
+
+            # Check base time with minv:secv format.
+            basev = tcd.split('/')[1].split('+')[0].strip()
+            base_secv = 0
+            if ':' in basev:
+                base_minv = int(basev.split(':')[0])
+                base_secv = int(basev.split(':')[1])
+            else:
+                base_minv = int(basev)
+            all_base_sec = base_minv * 60 + base_secv
+
             incv = float(tcd.split('/')[1].split('+')[1].strip())
+            logging.info(f'base_minv: {base_minv}m, base_secv: {base_secv}s, incv: {incv}s')
 
             # Send level command to each engine.
-            e.stdin.write(f'level 0 {int(basev)} {int(incv)}\n')
-            logging.debug(f'{pn} > level 0 {int(basev)} {int(incv)}')
+            e.stdin.write(f'level 0 {all_base_sec//60} {int(incv)}\n')
+            logging.debug(f'{pn} > level 0 {all_base_sec//60} {int(incv)}')
 
-            # Setup Timer, convert base in minutes to ms and inc in sec to ms
-            timer.append(Timer(int(basev * 60 * 1000), int(incv * 1000)))
+            # Setup Timer, convert base time to ms and inc in sec to ms
+            timer.append(Timer(all_base_sec * 1000, int(incv * 1000)))
 
             e.stdin.write(f'setboard {fen}\n')
             logging.debug(f'{pn} > setboard {fen}')
