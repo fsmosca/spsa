@@ -291,7 +291,10 @@ def match(e1, e2, fen, output_game_file, variant, num_games=2,
             tcd = pr['tc']
 
             # Check base time with minv:secv format.
-            basev = tcd.split('/')[1].split('+')[0].strip()
+            if '/' in tcd:
+                basev = tcd.split('/')[1].split('+')[0].strip()
+            else:
+                basev = tcd.split('+')[0].strip()
             base_secv = 0
             if ':' in basev:
                 base_minv = int(basev.split(':')[0])
@@ -300,7 +303,10 @@ def match(e1, e2, fen, output_game_file, variant, num_games=2,
                 base_minv = int(basev)
             all_base_sec = base_minv * 60 + base_secv
 
-            incv = float(tcd.split('/')[1].split('+')[1].strip())
+            if '/' in tcd:
+                incv = float(tcd.split('/')[1].split('+')[1].strip())
+            else:
+                incv = float(tcd.split('+')[1].strip())
             logging.info(f'base_minv: {base_minv}m, base_secv: {base_secv}s, incv: {incv}s')
 
             # Send level command to each engine.
