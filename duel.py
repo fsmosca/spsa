@@ -59,6 +59,33 @@ def get_fen_list(fn, is_rand=False):
     return fens
 
 
+def get_tc(tcd):
+    """
+    tc=0/3+1 or 3+1, blitz 3m + 1s inc
+    tc=0/0:5+0.1 or 0:5+0.1, blitz 0m + 5s + 0.1s inc
+    """
+    base_minv, base_secv, inc_secv = 0, 0, 0.0
+
+    # Check base time with minv:secv format.
+    if '/' in tcd:
+        basev = tcd.split('/')[1].split('+')[0].strip()
+    else:
+        basev = tcd.split('+')[0].strip()
+
+    if ':' in basev:
+        base_minv = int(basev.split(':')[0])
+        base_secv = int(basev.split(':')[1])
+    else:
+        base_minv = int(basev)
+
+    if '/' in tcd:
+        inc_secv = float(tcd.split('/')[1].split('+')[1].strip())
+    else:
+        inc_secv = float(tcd.split('+')[1].strip())
+
+    return base_minv, base_secv, inc_secv
+
+
 def turn(fen):
     """
     Return side to move of the given fen.
@@ -288,25 +315,9 @@ def match(e1, e2, fen, output_game_file, variant, num_games=2,
             logging.debug(f'{pn} > post')
 
             # Define time control, base time in minutes and inc in seconds.
-            tcd = pr['tc']
-
-            # Check base time with minv:secv format.
-            if '/' in tcd:
-                basev = tcd.split('/')[1].split('+')[0].strip()
-            else:
-                basev = tcd.split('+')[0].strip()
-            base_secv = 0
-            if ':' in basev:
-                base_minv = int(basev.split(':')[0])
-                base_secv = int(basev.split(':')[1])
-            else:
-                base_minv = int(basev)
+            base_minv, base_secv, incv = get_tc(pr['tc'])
             all_base_sec = base_minv * 60 + base_secv
 
-            if '/' in tcd:
-                incv = float(tcd.split('/')[1].split('+')[1].strip())
-            else:
-                incv = float(tcd.split('+')[1].strip())
             logging.info(f'base_minv: {base_minv}m, base_secv: {base_secv}s, incv: {incv}s')
 
             # Send level command to each engine.
@@ -464,6 +475,10 @@ def main():
                         help='number of game to run in parallel, default=1',
                         type=int, default=1)
     parser.add_argument('--variant', required=True, help='name of the variant')
+    parser.add_argument('-each', nargs='*', action='append', required=False,
+                        help='This option is used to apply to both engnes.\n'
+                             'Example where tc is applied to each engine:\n'
+                             '-each tc=1+0.1')
 
     args = parser.parse_args()
 
@@ -501,10 +516,24 @@ def main():
         print('Error, engines are not properly defined!')
         return
 
+    each_engine_option = {}
+    for opt in args.each:
+        for value in opt:
+            key = value.split('=')[0]
+            val = value.split('=')[1].strip()
+            each_engine_option.update({key: val})
+
     # Exit if tc or time control is not defined.
     if e1['tc'] == '' or e2['tc'] == '':
-        print('Error, tc or time control is not properly defined!')
-        return
+        if 'tc' in each_engine_option:
+            for key, val in each_engine_option.items():
+                if key == 'tc':
+                    e1.update({key: val})
+                    e2.update({key: val})
+                    break
+        else:
+            print('Error, tc or time control is not properly defined!')
+            return
 
     fen_file = args.start_fen
     is_random_startpos = True
