@@ -469,7 +469,7 @@ def main():
                         help='fen file of startpos for the match')
     parser.add_argument('--adjudicate', action='store_true',
                         help='adjudicate the game')
-    parser.add_argument('--pgn-output-file', required=False,
+    parser.add_argument('-pgnout', required=False,
                         help='pgn output filename')
     parser.add_argument('--concurrency', required=False,
                         help='number of game to run in parallel, default=1',
