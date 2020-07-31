@@ -465,8 +465,6 @@ def main():
                         help='This option is used to define the engines.\n'
                         'Example:\n'
                         '-engine cmd=engine1.exe name=test ... --engine cmd=engine2.exe name=base')
-    parser.add_argument('--start-fen', required=True,
-                        help='fen file of startpos for the match')
     parser.add_argument('--adjudicate', action='store_true',
                         help='adjudicate the game')
     parser.add_argument('-pgnout', required=False,
@@ -479,6 +477,9 @@ def main():
                         help='This option is used to apply to both engnes.\n'
                              'Example where tc is applied to each engine:\n'
                              '-each tc=1+0.1')
+    parser.add_argument('-openings', nargs='*', action='append', required=True,
+                        help='Define start openings. Example:\n'
+                             '-openings file=start.fen format=epd')
 
     args = parser.parse_args()
 
@@ -535,7 +536,13 @@ def main():
             print('Error, tc or time control is not properly defined!')
             return
 
-    fen_file = args.start_fen
+    # Start opening file
+    if args.openings:
+        for opt in args.openings:
+            for value in opt:
+                if 'file=' in value:
+                    fen_file = value.split('=')[1]
+
     is_random_startpos = True
     games_per_match = 2
     posround = 1  # Number of times the same position is played
