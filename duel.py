@@ -462,22 +462,25 @@ def main():
                              'of the start position',
                         type=int, default=1)
     parser.add_argument('-engine', nargs='*', action='append', required=True,
+                        metavar=('cmd=', 'name='),
                         help='This option is used to define the engines.\n'
                         'Example:\n'
                         '-engine cmd=engine1.exe name=test ... --engine cmd=engine2.exe name=base')
     parser.add_argument('--adjudicate', action='store_true',
                         help='adjudicate the game')
-    parser.add_argument('-pgnout', required=False,
+    parser.add_argument('-pgnout', required=False, metavar='pgn_output_filename',
                         help='pgn output filename')
     parser.add_argument('--concurrency', required=False,
                         help='number of game to run in parallel, default=1',
                         type=int, default=1)
     parser.add_argument('--variant', required=True, help='name of the variant')
     parser.add_argument('-each', nargs='*', action='append', required=False,
+                        metavar=('tc=', 'option.<option_name>='),
                         help='This option is used to apply to both engnes.\n'
                              'Example where tc is applied to each engine:\n'
                              '-each tc=1+0.1')
     parser.add_argument('-openings', nargs='*', action='append', required=True,
+                        metavar=('file=', 'format='),
                         help='Define start openings. Example:\n'
                              '-openings file=start.fen format=epd')
 
