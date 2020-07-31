@@ -542,7 +542,7 @@ def main():
 
     fens = get_fen_list(fen_file, is_random_startpos)
 
-    output_game_file = args.pgn_output_file
+    output_game_file = args.pgnout
 
     t1 = time.perf_counter()
 
