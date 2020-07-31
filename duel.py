@@ -156,30 +156,33 @@ def save_game(outfn, fen, moves, e1, e2, start_turn, gres, termination=''):
         f.write('\n\n')
 
 
-def adjudicate_win(score_history, win_adj_move_num, side):
+def adjudicate_win(score_history, resign_option, side):
     logging.info('Try adjudicating this game by win ...')
     ret, gres, e1score = False, '*', 0.0
 
-    if len(score_history) >= win_adj_move_num:
+    if len(score_history) >= 40:
         fcp_score = score_history[0::2]
         scp_score = score_history[1::2]
 
-        fwin_cnt, swin_cnt, win_score = 0, 0, 300
+        fwin_cnt, swin_cnt = 0, 0
+        movecount = resign_option['movecount'] * 2
+        score = resign_option['score']
+
         for i, (fs, ss) in enumerate(zip(reversed(fcp_score),
                                          reversed(scp_score))):
-            if i >= 3:
+            if i >= movecount:
                 break
-            if i <= 2 and fs >= win_score and ss <= -win_score:
+            if i <= movecount and fs >= score and ss <= -score:
                 fwin_cnt += 1
-            elif i <= 2 and fs <= -win_score and ss >= win_score:
+            elif i <= movecount and fs <= -score and ss >= score:
                 swin_cnt += 1
 
-        if fwin_cnt >= 3:
+        if fwin_cnt >= movecount:
             gres = '1-0' if side else '0-1'
             e1score = 1.0
             logging.info(f'{"White" if side else "Black"} wins by adjudication.')
             ret = True
-        if swin_cnt >= 3:
+        if swin_cnt >= movecount:
             gres = '1-0' if side else '0-1'
             e1score = 0
             logging.info(f'{"White" if side else "Black"} wins by adjudication.')
@@ -188,23 +191,27 @@ def adjudicate_win(score_history, win_adj_move_num, side):
     return ret, gres, e1score
 
 
-def adjudicate_draw(score_history, draw_adj_move_num):
+def adjudicate_draw(score_history, draw_option):
     logging.info('Try adjudicating this game by draw ...')
     ret, gres, e1score = False, '*', 0.0
 
-    if len(score_history) >= draw_adj_move_num:
+    if len(score_history) >= draw_option['movenumber'] * 2:
         fcp_score = score_history[0::2]
         scp_score = score_history[1::2]
 
-        draw_cnt, draw_score = 0, 5
+        draw_cnt = 0
+        movecount = draw_option['movecount'] * 2
+        score = draw_option['score']
+
         for i, (fs, ss) in enumerate(zip(reversed(fcp_score),
                                          reversed(scp_score))):
-            if i >= 3:
+            if i >= movecount:
                 break
-            if i <= 2 and abs(fs) <= draw_score and abs(ss) <= draw_score:
+            if (i <= movecount and abs(fs) <= score
+                    and abs(ss) <= score):
                 draw_cnt += 1
 
-        if draw_cnt >= 3:
+        if draw_cnt >= movecount:
             gres = '1/2-1/2'
             e1score = 0.5
             logging.info('Draw by adjudication.')
@@ -282,13 +289,11 @@ def time_forfeit(is_timeup, current_color, test_engine_color):
     return game_end, gres, e1score
 
 
-def match(e1, e2, fen, output_game_file, variant, num_games=2,
-          is_adjudicate_game=False):
+def match(e1, e2, fen, output_game_file, variant, draw_option, resign_option, num_games=2):
     """
     Run an engine match between e1 and e2. Save the game and print result
     from e1 perspective.
     """
-    win_adj_move_num, draw_adj_move_num = 40, 60
     move_hist = []
     all_e1score = 0.0
     is_show_search_info = False
@@ -443,15 +448,28 @@ def match(e1, e2, fen, output_game_file, variant, num_games=2,
             if game_end:
                 break
 
-            if is_adjudicate_game:
+            # Game adjudications
+
+            # Resign
+            if (resign_option['movecount'] is not None
+                    and resign_option['score'] is not None):
                 game_endr, gresr, e1scorer = adjudicate_win(
-                    score_history, win_adj_move_num, side)
-                if not game_endr:
-                    game_endr, gresr, e1scorer = adjudicate_draw(
-                        score_history, draw_adj_move_num)
+                    score_history, resign_option, side)
+
                 if game_endr:
                     gres, e1score = gresr, e1scorer
-                    print(f'Game ends by adjudication, side is {start_turn}')
+                    print(f'Game ends by resign adjudication.')
+                    break
+
+            # Draw
+            if (draw_option['movenumber'] is not None
+                    and draw_option['movenumber'] is not None
+                    and draw_option['score'] is not None):
+                game_endr, gresr, e1scorer = adjudicate_draw(
+                    score_history, draw_option)
+                if game_endr:
+                    gres, e1score = gresr, e1scorer
+                    print(f'Game ends by draw adjudication.')
                     break
 
             # Time is over
@@ -479,7 +497,7 @@ def match(e1, e2, fen, output_game_file, variant, num_games=2,
 
 
 def round_match(fen, e1, e2, output_game_file, games_per_match,
-                is_adjudicate_game, variant, posround=1):
+                draw_option, resign_option, variant, posround=1):
     """
     Play a match between e1 and e2 using fen as starting position. By default
     2 games will be played color is reversed. If posround is more than 1, the
@@ -490,8 +508,7 @@ def round_match(fen, e1, e2, output_game_file, games_per_match,
 
     for _ in range(posround):
         res = match(e1, e2, fen, output_game_file, variant,
-                    num_games=games_per_match,
-                    is_adjudicate_game=is_adjudicate_game)
+                    draw_option, resign_option, num_games=games_per_match)
         test_engine_score.append(res)
 
     return test_engine_score
@@ -511,8 +528,14 @@ def main():
                         help='This option is used to define the engines.\n'
                         'Example:\n'
                         '-engine cmd=engine1.exe name=test ... --engine cmd=engine2.exe name=base')
-    parser.add_argument('--adjudicate', action='store_true',
-                        help='adjudicate the game')
+    parser.add_argument('-draw', nargs='*', action='append', required=False,
+                        metavar=('movenumber=', 'movecount='),
+                        help='Adjudicates game to a draw result. Example:\n'
+                             '-draw movenumber=40 movecount=10 score=0')
+    parser.add_argument('-resign', nargs='*', action='append', required=False,
+                        metavar=('movecount=', 'score='),
+                        help='Adjudicates game to a loss result. Example:\n'
+                             '-resign movecount=10 score=900')
     parser.add_argument('-pgnout', required=False, metavar='pgn_output_filename',
                         help='pgn output filename')
     parser.add_argument('--concurrency', required=False,
@@ -566,6 +589,20 @@ def main():
                 if 'file=' in value:
                     fen_file = value.split('=')[1]
 
+    draw_option = {'movenumber': None, 'movecount': None, 'score': None}
+    if args.draw is not None:
+        for opt in args.draw[0]:
+            key = opt.split('=')[0]
+            val = int(opt.split('=')[1])
+            draw_option.update({key: val})
+
+    resign_option = {'movecount': None, 'score': None}
+    if args.resign is not None:
+        for opt in args.resign[0]:
+            key = opt.split('=')[0]
+            val = int(opt.split('=')[1])
+            resign_option.update({key: val})
+
     is_random_startpos = True
     games_per_match = 2
     posround = 1  # Number of times the same position is played
@@ -588,7 +625,7 @@ def main():
                 break
             job = executor.submit(round_match, fen, e1, e2,
                                   output_game_file, games_per_match,
-                                  args.adjudicate, args.variant, posround)
+                                  draw_option, resign_option, args.variant, posround)
             joblist.append(job)
 
         for future in concurrent.futures.as_completed(joblist):
