@@ -83,6 +83,10 @@ def get_fen_list(fn, is_rand=False):
     Red fen file and return a list of fens.
     """
     fens = []
+
+    if fn is None:
+        return fens
+
     with open(fn) as f:
         for lines in f:
             fen = lines.strip()
@@ -142,7 +146,11 @@ def save_game(outfn, fen, moves, e1, e2, start_turn, gres, termination=''):
         if termination != '':
             f.write(f'[Termination "{termination}"]\n')
 
-        f.write(f'[FEN "{fen}"]\n\n')
+        if not isinstance(fen, int):
+            f.write(f'[FEN "{fen}"]\n\n')
+        else:
+            f.write('\n')
+
         for m in moves:
             f.write(f'{m} ')
         f.write('\n\n')
@@ -362,11 +370,13 @@ def match(e1, e2, fen, output_game_file, variant, num_games=2,
             # Setup Timer, convert base time to ms and inc in sec to ms
             timer.append(Timer(all_base_sec * 1000, int(incv * 1000)))
 
-            e.stdin.write(f'setboard {fen}\n')
-            logging.debug(f'{pn} > setboard {fen}')
+            if not isinstance(fen, int):
+                e.stdin.write(f'setboard {fen}\n')
+                logging.debug(f'{pn} > setboard {fen}')
 
         num, side, move, line, game_end = 0, 0, None, '', False
-        score_history, elapse_history, start_turn = [], [], turn(fen)
+        score_history, elapse_history = [], []
+        start_turn = turn(fen) if not isinstance(fen, int) else True
         gres, e1score = '*', 0.0
         is_time_over = [False, False]
         current_color = start_turn  # True if white to move
@@ -514,7 +524,7 @@ def main():
                         help='This option is used to apply to both engnes.\n'
                              'Example where tc is applied to each engine:\n'
                              '-each tc=1+0.1')
-    parser.add_argument('-openings', nargs='*', action='append', required=True,
+    parser.add_argument('-openings', nargs='*', action='append', required=False,
                         metavar=('file=', 'format='),
                         help='Define start openings. Example:\n'
                              '-openings file=start.fen format=epd')
@@ -549,7 +559,8 @@ def main():
             return
 
     # Start opening file
-    if args.openings:
+    fen_file = None
+    if args.openings is not None:
         for opt in args.openings:
             for value in opt:
                 if 'file=' in value:
@@ -572,7 +583,7 @@ def main():
 
     # Use Python 3.8 or higher
     with ProcessPoolExecutor(max_workers=args.concurrency) as executor:
-        for i, fen in enumerate(fens):
+        for i, fen in enumerate(fens if len(fens) else range(1000)):
             if i >= args.round:
                 break
             job = executor.submit(round_match, fen, e1, e2,
