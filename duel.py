@@ -43,6 +43,41 @@ class Timer:
         return self.rem_time // 10
 
 
+def define_engine(engine_option_value):
+    """
+    Define engine files, name and options.
+    """
+    ed1, ed2 = {}, {}
+    e1 = {'proc': None, 'cmd': None, 'name': 'test', 'opt': ed1, 'tc': ''}
+    e2 = {'proc': None, 'cmd': None, 'name': 'base', 'opt': ed2, 'tc': ''}
+    for i, eng_opt_val in enumerate(engine_option_value):
+        for value in eng_opt_val:
+            if i == 0:
+                if 'cmd=' in value:
+                    e1.update({'cmd': value.split('=')[1]})
+                elif 'option.' in value:
+                    # Todo: support float value
+                    # option.QueenValueOpening=1000
+                    optn = value.split('option.')[1].split('=')[0]
+                    optv = int(value.split('option.')[1].split('=')[1])
+                    ed1.update({optn: optv})
+                    e1.update({'opt': ed1})
+                elif 'tc' in value:
+                    e1.update({'tc': value.split('=')[1]})
+            elif i == 1:
+                if 'cmd=' in value:
+                    e2.update({'cmd': value.split('=')[1]})
+                elif 'option.' in value:
+                    optn = value.split('option.')[1].split('=')[0]
+                    optv = int(value.split('option.')[1].split('=')[1])
+                    ed2.update({optn: optv})
+                    e2.update({'opt': ed2})
+                elif 'tc' in value:
+                    e2.update({'tc': value.split('=')[1]})
+
+    return e1, e2
+
+
 def get_fen_list(fn, is_rand=False):
     """
     Red fen file and return a list of fens.
@@ -487,33 +522,7 @@ def main():
     args = parser.parse_args()
 
     # Define engine files, name and options.
-    ed1, ed2 = {}, {}
-    e1 = {'proc': None, 'cmd': None, 'name': 'test', 'opt': ed1, 'tc': ''}
-    e2 = {'proc': None, 'cmd': None, 'name': 'base', 'opt': ed2, 'tc': ''}
-    for i, eng_opt_val in enumerate(args.engine):
-        for value in eng_opt_val:
-            if i == 0:
-                if 'cmd=' in value:
-                    e1.update({'cmd': value.split('=')[1]})
-                elif 'option.' in value:
-                    # Todo: support float value
-                    # option.QueenValueOpening=1000
-                    optn = value.split('option.')[1].split('=')[0]
-                    optv = int(value.split('option.')[1].split('=')[1])
-                    ed1.update({optn: optv})
-                    e1.update({'opt': ed1})
-                elif 'tc' in value:
-                    e1.update({'tc': value.split('=')[1]})
-            elif i == 1:
-                if 'cmd=' in value:
-                    e2.update({'cmd': value.split('=')[1]})
-                elif 'option.' in value:
-                    optn = value.split('option.')[1].split('=')[0]
-                    optv = int(value.split('option.')[1].split('=')[1])
-                    ed2.update({optn: optv})
-                    e2.update({'opt': ed2})
-                elif 'tc' in value:
-                    e2.update({'tc': value.split('=')[1]})
+    e1, e2 = define_engine(args.engine)
 
     # Exit if engine file is not defined.
     if e1['cmd'] is None or e2['cmd'] is None:
