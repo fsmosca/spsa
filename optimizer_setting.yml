@@ -63,7 +63,6 @@ cutechess:
         order: "random"
         plies: 10000
         start: 1
-        policy: "default"
 
       adjudications:
         resign:
