@@ -289,7 +289,7 @@ def time_forfeit(is_timeup, current_color, test_engine_color):
     return game_end, gres, e1score
 
 
-def match(e1, e2, fen, output_game_file, variant, draw_option, resign_option, num_games=2):
+def match(e1, e2, fen, output_game_file, variant, draw_option, resign_option, repeat=2):
     """
     Run an engine match between e1 and e2. Save the game and print result
     from e1 perspective.
@@ -299,7 +299,7 @@ def match(e1, e2, fen, output_game_file, variant, draw_option, resign_option, nu
     is_show_search_info = False
 
     # Start engine match, 2 games will be played.
-    for gn in range(num_games):
+    for gn in range(repeat):
         logging.info(f'Match game no. {gn + 1}')
         logging.info(f'Test engine plays as {"first" if gn % 2 == 0 else "second"} engine.')
 
@@ -493,10 +493,10 @@ def match(e1, e2, fen, output_game_file, variant, draw_option, resign_option, nu
         print(e1score)
         all_e1score += e1score
 
-    return all_e1score/num_games
+    return all_e1score/repeat
 
 
-def round_match(fen, e1, e2, output_game_file, games_per_match,
+def round_match(fen, e1, e2, output_game_file, repeat,
                 draw_option, resign_option, variant, posround=1):
     """
     Play a match between e1 and e2 using fen as starting position. By default
@@ -508,7 +508,7 @@ def round_match(fen, e1, e2, output_game_file, games_per_match,
 
     for _ in range(posround):
         res = match(e1, e2, fen, output_game_file, variant,
-                    draw_option, resign_option, num_games=games_per_match)
+                    draw_option, resign_option, repeat=repeat)
         test_engine_score.append(res)
 
     return test_engine_score
@@ -523,6 +523,12 @@ def main():
                              'since each engine will play the start side\n'
                              'of the start position',
                         type=int, default=1)
+    parser.add_argument('-repeat', required=False,
+                        help='Number of times to play a certain opening\n'
+                             'default is 2 so that the position will be\n'
+                             'played twice and each engine takes both white\n'
+                             'and black at the start of each game.',
+                        type=int, default=2)
     parser.add_argument('-engine', nargs='*', action='append', required=True,
                         metavar=('cmd=', 'name='),
                         help='This option is used to define the engines.\n'
@@ -604,7 +610,6 @@ def main():
             resign_option.update({key: val})
 
     is_random_startpos = True
-    games_per_match = 2
     posround = 1  # Number of times the same position is played
 
     fens = get_fen_list(fen_file, is_random_startpos)
@@ -624,7 +629,7 @@ def main():
             if i >= args.round:
                 break
             job = executor.submit(round_match, fen, e1, e2,
-                                  output_game_file, games_per_match,
+                                  output_game_file, args.repeat,
                                   draw_option, resign_option, args.variant, posround)
             joblist.append(job)
 
