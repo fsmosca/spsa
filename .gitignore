@@ -126,6 +126,11 @@ ENV/
 
 # Positions
 *.fen
+*.epd
 
 # Test
 *.exe
+
+# Others
+*.bin
+*.dat
