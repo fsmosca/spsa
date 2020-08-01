@@ -541,7 +541,7 @@ def main():
                              '-resign movecount=10 score=900')
     parser.add_argument('-pgnout', required=False, metavar='pgn_output_filename',
                         help='pgn output filename')
-    parser.add_argument('--concurrency', required=False,
+    parser.add_argument('-concurrency', required=False,
                         help='number of game to run in parallel, default=1',
                         type=int, default=1)
     parser.add_argument('-variant', required=True, help='name of the variant')
