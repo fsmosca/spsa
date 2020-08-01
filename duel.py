@@ -517,7 +517,7 @@ def round_match(fen, e1, e2, output_game_file, repeat,
 def main():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument('--round', required=False,
+    parser.add_argument('-round', required=False,
                         help='Total games to play, default=1\n',
                         type=int, default=1)
     parser.add_argument('-repeat', required=False,
