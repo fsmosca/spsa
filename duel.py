@@ -544,7 +544,7 @@ def main():
     parser.add_argument('--concurrency', required=False,
                         help='number of game to run in parallel, default=1',
                         type=int, default=1)
-    parser.add_argument('--variant', required=True, help='name of the variant')
+    parser.add_argument('-variant', required=True, help='name of the variant')
     parser.add_argument('-each', nargs='*', action='append', required=False,
                         metavar=('tc=', 'option.<option_name>='),
                         help='This option is used to apply to both engnes.\n'
