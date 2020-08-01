@@ -554,6 +554,8 @@ def main():
                         metavar=('file=', 'format='),
                         help='Define start openings. Example:\n'
                              '-openings file=start.fen format=epd')
+    parser.add_argument('-tournament', required=False, default='round-robin',
+                        metavar='tour_type', help='tournament type, default=round-robin')
 
     args = parser.parse_args()
 
