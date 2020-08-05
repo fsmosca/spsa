@@ -75,7 +75,12 @@ class game_optimizer:
 
         # Create the command line and the list of parameters
         command = f'{self.ENGINE_COMMAND}'
-        args = f'--seed {seed} '
+
+        if Path(self.tour_manager).suffix == '.exe':
+            args = f'--seed {seed} '
+        else:
+            args = ''
+
         args += f'--fcp "{self.fcp}" '
         args += f'--scp "{self.scp}" '
         args += f'--cutechess-cli-path {self.tour_manager} '
