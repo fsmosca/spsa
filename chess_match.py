@@ -41,6 +41,7 @@ a match result of (2 + 0.5 + 0) / 6 = 0.417
 from subprocess import Popen, PIPE
 import logging
 import argparse
+from pathlib import Path
 
 
 APP_VERSION = 1.1
@@ -113,7 +114,10 @@ def main():
         scp += f' option.{spname}={spvalue} '
 
     # Run optimizer at the folder where game_optimizer.py is located.
-    command = f'{cutechess_cli_path} {cutechess_cli_options} -srand {seed} '
+    if Path(cutechess_cli_path).suffix == '.py':
+        command = f'python -u {cutechess_cli_path} {cutechess_cli_options} -variant mt '
+    else:
+        command = f'{cutechess_cli_path} {cutechess_cli_options} -srand {seed} '
     command += f'-engine {fcp} -engine {scp} '
     command += f'-each {cutechess_cli_engine_options}'
     logging.info(f'{__file__} > {command}')
