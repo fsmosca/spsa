@@ -332,13 +332,14 @@ def match(e1, e2, fen, output_game_file, variant, draw_option, resign_option, re
 
             for eline in iter(e.stdout.readline, ''):
                 line = eline.strip()
+                logging.debug(f'{pn} < {line}')
                 if 'done=1' in line:
                     break
 
             # Set param to engines.
             for k, v in pr['opt'].items():
                 e.stdin.write(f'option {k}={v}\n')
-                print(f'{pn} -> option {k}={v}')
+                logging.debug(f'{pn} > option {k}={v}')
 
         timer = []
         for i, pr in enumerate(eng):
@@ -441,7 +442,6 @@ def match(e1, e2, fen, output_game_file, variant, draw_option, resign_option, re
                     if timer[side].is_zero_time():
                         is_time_over[current_color] = True
                         termination = 'forfeits on time'
-                        print('time is over')
                         logging.info('time is over')
                     break
 
@@ -458,7 +458,7 @@ def match(e1, e2, fen, output_game_file, variant, draw_option, resign_option, re
 
                 if game_endr:
                     gres, e1score = gresr, e1scorer
-                    print(f'Game ends by resign adjudication.')
+                    logging.info('Game ends by resign adjudication.')
                     break
 
             # Draw
@@ -469,7 +469,7 @@ def match(e1, e2, fen, output_game_file, variant, draw_option, resign_option, re
                     score_history, draw_option)
                 if game_endr:
                     gres, e1score = gresr, e1scorer
-                    print(f'Game ends by draw adjudication.')
+                    logging.info('Game ends by resign adjudication.')
                     break
 
             # Time is over
@@ -490,7 +490,6 @@ def match(e1, e2, fen, output_game_file, variant, draw_option, resign_option, re
             e['proc'].stdin.write('quit\n')
             logging.debug(f'{e["name"]} > quit')
 
-        print(e1score)
         all_e1score += e1score
 
     return all_e1score/repeat
@@ -517,7 +516,7 @@ def round_match(fen, e1, e2, output_game_file, repeat,
 def main():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument('-round', required=False,
+    parser.add_argument('-rounds', required=False,
                         help='Total games to play, default=1\n',
                         type=int, default=1)
     parser.add_argument('-repeat', required=False,
@@ -621,7 +620,7 @@ def main():
     joblist = []
     test_engine_score_list = []
     match_done = 0
-    total_games = max(1, args.round // args.repeat)
+    total_games = max(1, args.rounds // args.repeat)
 
     # Use Python 3.8 or higher
     with ProcessPoolExecutor(max_workers=args.concurrency) as executor:
@@ -637,16 +636,12 @@ def main():
             try:
                 test_engine_score = future.result()[0]
                 test_engine_score_list.append(test_engine_score)
-                print(f'test_engine_score: {test_engine_score}')
                 match_done += 1
-                print(f'match done: {match_done}')
             except concurrent.futures.process.BrokenProcessPool as ex:
                 print(f'exception: {ex}')
 
-    # The match is done, print score perf of test engine.
-    print(f'test engine score list: {test_engine_score_list}')
-    print(f'final test score: {mean(test_engine_score_list)}')
-    print(f'elapse: {time.perf_counter() - t1:0.2f}s')
+    logging.info(f'final test score: {mean(test_engine_score_list)}')
+    print(f'Score of {e1["name"]} vs {e2["name"]}: [{mean(test_engine_score_list)}]')
 
 
 if __name__ == '__main__':
