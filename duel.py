@@ -17,7 +17,7 @@ from statistics import mean
 
 logging.basicConfig(filename='log_duel.txt', filemode='w',
                     level=logging.DEBUG,
-                    format='%(asctime)s - %(levelname)s - %(message)s')
+                    format='%(asctime)s - pid%(process)5d - %(levelname)5s - %(message)s')
 
 
 class Timer:
