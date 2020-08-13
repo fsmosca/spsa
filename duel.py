@@ -370,15 +370,26 @@ def match(e1, e2, fen, output_game_file, variant, draw_option, resign_option, re
             logging.info(f'base_minv: {base_minv}m, base_secv: {base_secv}s, incv: {incv}s')
 
             # Send level command to each engine.
-            e.stdin.write(f'level 0 {all_base_sec//60} {int(incv)}\n')
-            logging.debug(f'{pn} > level 0 {all_base_sec//60} {int(incv)}')
+            tbase = max(1, all_base_sec//60)
+            e.stdin.write(f'level 0 {tbase} {float(incv):0.2f}\n')
+            logging.debug(f'{pn} > level 0 {tbase} {float(incv):0.2f}')
 
             # Setup Timer, convert base time to ms and inc in sec to ms
             timer.append(Timer(all_base_sec * 1000, int(incv * 1000)))
 
-            if not isinstance(fen, int):
-                e.stdin.write(f'setboard {fen}\n')
-                logging.debug(f'{pn} > setboard {fen}')
+            e.stdin.write('force\n')
+            logging.debug(f'{pn} > force')
+
+            e.stdin.write(f'setboard {fen}\n')
+            logging.debug(f'{pn} > setboard {fen}')
+
+            e.stdin.write('ping 2\n')
+            logging.debug(f'{pn} > ping 2')
+            for eline in iter(e.stdout.readline, ''):
+                line = eline.strip()
+                logging.debug(f'{pn} < {line}')
+                if 'pong' in line:
+                    break
 
         num, side, move, line, game_end = 0, 0, None, '', False
         score_history, elapse_history = [], []
@@ -408,6 +419,11 @@ def match(e1, e2, fen, output_game_file, variant, draw_option, resign_option, re
                 move_hist.append(move)
                 eng[side]['proc'].stdin.write(f'{move}\n')
                 logging.debug(f'{eng[side]["name"]} > {move}')
+
+                # Send another go because of force.
+                if num == 1:
+                    eng[side]['proc'].stdin.write('go\n')
+                    logging.debug(f'{eng[side]["name"]} > go')
 
             num += 1
             score = None
