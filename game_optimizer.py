@@ -275,7 +275,7 @@ class game_optimizer:
                                         self.tour_manager_eng_options += f'{name4}={value4} '
                                 elif name3 == 'cutechess_option':
                                     for name4, value4 in value3.items():
-                                        if name4 in ['tournament', 'concurrency', 'games', 'repeat', 'rounds']:
+                                        if name4 in ['tournament', 'concurrency', 'games', 'repeat', 'rounds', 'variant']:
                                             self.tour_manager_options += f'-{name4} {value4} '
                                         elif name4 == 'pgnout':
                                             pout = '-pgnout '
