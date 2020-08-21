@@ -115,7 +115,7 @@ def main():
 
     # Run optimizer at the folder where game_optimizer.py is located.
     if Path(cutechess_cli_path).suffix == '.py':
-        command = f'python -u {cutechess_cli_path} {cutechess_cli_options} -variant mt '
+        command = f'python -u {cutechess_cli_path} {cutechess_cli_options} '
     else:
         command = f'{cutechess_cli_path} {cutechess_cli_options} -srand {seed} '
     command += f'-engine {fcp} -engine {scp} '
