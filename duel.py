@@ -380,8 +380,9 @@ def match(e1, e2, fen, output_game_file, variant, draw_option, resign_option, re
             e.stdin.write('force\n')
             logging.debug(f'{pn} > force')
 
-            e.stdin.write(f'setboard {fen}\n')
-            logging.debug(f'{pn} > setboard {fen}')
+            if not isinstance(fen, int):
+                e.stdin.write(f'setboard {fen}\n')
+                logging.debug(f'{pn} > setboard {fen}')
 
             e.stdin.write('ping 2\n')
             logging.debug(f'{pn} > ping 2')
