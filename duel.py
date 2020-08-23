@@ -156,9 +156,9 @@ def save_game(outfn, fen, moves, e1, e2, start_turn, gres, termination=''):
         f.write('\n\n')
 
 
-def adjudicate_win(score_history, resign_option, side):
+def adjudicate_win(score_history, resign_option, game_index, test_engine_color):
     logging.info('Try adjudicating this game by win ...')
-    ret, gres, e1score = False, '*', 0.0
+    ret, gres, e1score, termi = False, '*', 0.0, ''
 
     if len(score_history) >= 40:
         fcp_score = score_history[0::2]
@@ -178,22 +178,48 @@ def adjudicate_win(score_history, resign_option, side):
                 swin_cnt += 1
 
         if fwin_cnt >= movecount:
-            gres = '1-0' if side else '0-1'
-            e1score = 1.0
-            logging.info(f'{"White" if side else "Black"} wins by adjudication.')
             ret = True
-        if swin_cnt >= movecount:
-            gres = '1-0' if side else '0-1'
-            e1score = 0
-            logging.info(f'{"White" if side else "Black"} wins by adjudication.')
+            if game_index % 2 == 0:
+                e1score = 1.0
+                if test_engine_color:
+                    gres = '1-0'
+                else:
+                    gres = '0-1'
+            else:
+                e1score = 0.0
+                if test_engine_color:
+                    gres = '0-1'
+                else:
+                    gres = '1-0'
+        elif swin_cnt >= movecount:
             ret = True
+            if game_index % 2 == 0:
+                e1score = 0.0
+                if test_engine_color:
+                    gres = '0-1'
+                else:
+                    gres = '1-0'
+            else:
+                e1score = 1.0
+                if test_engine_color:
+                    gres = '1-0'
+                else:
+                    gres = '0-1'
 
-    return ret, gres, e1score
+        if ret:
+            if gres == '1-0':
+                termi = 'White wins by adjudication.'
+            else:
+                termi = 'Black wins by adjudication.'
+
+            logging.info(f'{termi}')
+
+    return ret, gres, e1score, termi
 
 
 def adjudicate_draw(score_history, draw_option):
     logging.info('Try adjudicating this game by draw ...')
-    ret, gres, e1score = False, '*', 0.0
+    ret, gres, e1score, termi = False, '*', 0.0, ''
 
     if len(score_history) >= draw_option['movenumber'] * 2:
         fcp_score = score_history[0::2]
@@ -216,8 +242,9 @@ def adjudicate_draw(score_history, draw_option):
             e1score = 0.5
             logging.info('Draw by adjudication.')
             ret = True
+            termi = 'Game ends by draw adjudication.'
 
-    return ret, gres, e1score
+    return ret, gres, e1score, termi
 
 
 def is_game_end(line, test_engine_color):
@@ -399,7 +426,12 @@ def match(e1, e2, fen, output_game_file, variant, draw_option, resign_option, re
         is_time_over = [False, False]
         current_color = start_turn  # True if white to move
 
-        test_engine_color = True if start_turn and gn % 2 == 0 else False
+        test_engine_color = False
+        if start_turn and gn % 2 == 0:
+            test_engine_color = True
+        elif not start_turn and gn % 2:
+            test_engine_color = True
+
         termination = ''
 
         # Start the game.
@@ -470,23 +502,21 @@ def match(e1, e2, fen, output_game_file, variant, draw_option, resign_option, re
             # Resign
             if (resign_option['movecount'] is not None
                     and resign_option['score'] is not None):
-                game_endr, gresr, e1scorer = adjudicate_win(
-                    score_history, resign_option, side)
+                game_endr, gresr, e1scorer, termi = adjudicate_win(
+                    score_history, resign_option, gn, test_engine_color)
 
                 if game_endr:
-                    gres, e1score = gresr, e1scorer
-                    logging.info('Game ends by resign adjudication.')
+                    gres, e1score, termination = gresr, e1scorer, termi
                     break
 
             # Draw
             if (draw_option['movenumber'] is not None
                     and draw_option['movenumber'] is not None
                     and draw_option['score'] is not None):
-                game_endr, gresr, e1scorer = adjudicate_draw(
+                game_endr, gresr, e1scorer, termi = adjudicate_draw(
                     score_history, draw_option)
                 if game_endr:
-                    gres, e1score = gresr, e1scorer
-                    logging.info('Game ends by resign adjudication.')
+                    gres, e1score, termination = gresr, e1scorer, termi
                     break
 
             # Time is over
@@ -630,8 +660,6 @@ def main():
     fens = get_fen_list(fen_file, is_random_startpos)
 
     output_game_file = args.pgnout
-
-    t1 = time.perf_counter()
 
     # Start match
     joblist = []
