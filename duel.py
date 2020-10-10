@@ -1,7 +1,7 @@
 """
 duel.py
 
-A module to handle non-uci engine vs engine matches.
+A module to handle xboard or winboard engine matches.
 """
 
 
@@ -13,11 +13,13 @@ import concurrent.futures
 from concurrent.futures import ProcessPoolExecutor
 import logging
 from statistics import mean
+from typing import List
 
 
-logging.basicConfig(filename='log_duel.txt', filemode='w',
-                    level=logging.DEBUG,
-                    format='%(asctime)s - pid%(process)5d - %(levelname)5s - %(message)s')
+logging.basicConfig(
+    filename='log_duel.txt', filemode='a',
+    level=logging.DEBUG,
+    format='%(asctime)s - pid%(process)5d - %(levelname)5s - %(message)s')
 
 
 class Timer:
@@ -48,8 +50,8 @@ def define_engine(engine_option_value):
     Define engine files, name and options.
     """
     ed1, ed2 = {}, {}
-    e1 = {'proc': None, 'cmd': None, 'name': 'test', 'opt': ed1, 'tc': ''}
-    e2 = {'proc': None, 'cmd': None, 'name': 'base', 'opt': ed2, 'tc': ''}
+    e1 = {'proc': None, 'cmd': None, 'name': 'test', 'opt': ed1, 'tc': '', 'depth': 0}
+    e2 = {'proc': None, 'cmd': None, 'name': 'base', 'opt': ed2, 'tc': '', 'depth': 0}
     for i, eng_opt_val in enumerate(engine_option_value):
         for value in eng_opt_val:
             if i == 0:
@@ -62,8 +64,12 @@ def define_engine(engine_option_value):
                     optv = int(value.split('option.')[1].split('=')[1])
                     ed1.update({optn: optv})
                     e1.update({'opt': ed1})
-                elif 'tc' in value:
+                elif 'tc=' in value:
                     e1.update({'tc': value.split('=')[1]})
+                elif 'name=' in value:
+                    e1.update({'name': value.split('=')[1]})
+                elif 'depth=' in value:
+                    e1.update({'depth': int(value.split('=')[1])})
             elif i == 1:
                 if 'cmd=' in value:
                     e2.update({'cmd': value.split('=')[1]})
@@ -72,15 +78,19 @@ def define_engine(engine_option_value):
                     optv = int(value.split('option.')[1].split('=')[1])
                     ed2.update({optn: optv})
                     e2.update({'opt': ed2})
-                elif 'tc' in value:
+                elif 'tc=' in value:
                     e2.update({'tc': value.split('=')[1]})
+                elif 'name=' in value:
+                    e2.update({'name': value.split('=')[1]})
+                elif 'depth=' in value:
+                    e2.update({'depth': int(value.split('=')[1])})
 
     return e1, e2
 
 
 def get_fen_list(fn, is_rand=False):
     """
-    Red fen file and return a list of fens.
+    Read fen file and return a list of fens.
     """
     fens = []
 
@@ -104,6 +114,9 @@ def get_tc(tcd):
     tc=0/0:5+0.1 or 0:5+0.1, blitz 0m + 5s + 0.1s inc
     """
     base_minv, base_secv, inc_secv = 0, 0, 0.0
+
+    if tcd == '':
+        return base_minv, base_secv, inc_secv
 
     # Check base time with minv:secv format.
     if '/' in tcd:
@@ -135,13 +148,16 @@ def turn(fen):
     return False
 
 
-def save_game(outfn, fen, moves, e1, e2, start_turn, gres, termination=''):
+def save_game(outfn, fen, moves, scores, depths, e1, e2, start_turn, gres,
+              termination='', variant=''):
     logging.info('Saving game ...')
     with open(outfn, 'a') as f:
         f.write('[Event "Optimization test"]\n')
         f.write(f'[White "{e1 if start_turn else e2}"]\n')
         f.write(f'[Black "{e1 if not start_turn else e2}"]\n')
         f.write(f'[Result "{gres}"]\n')
+
+        f.write(f'[Variant "{variant}"]\n')
 
         if termination != '':
             f.write(f'[Termination "{termination}"]\n')
@@ -151,14 +167,28 @@ def save_game(outfn, fen, moves, e1, e2, start_turn, gres, termination=''):
         else:
             f.write('\n')
 
-        for m in moves:
-            f.write(f'{m} ')
+        for i, (m, s, d) in enumerate(zip(moves, scores, depths)):
+            num = i + 1
+            if num % 2 == 0:
+                if start_turn:
+                    str_num = f'{num // 2}... '
+                else:
+                    str_num = f'{num // 2}. '
+            else:
+                num += 1
+                if start_turn:
+                    str_num = f'{num // 2}. '
+                else:
+                    str_num = f'{num // 2}... '
+            f.write(f'{str_num}{m} {{{s}/{d}}} ')
+            if (i + 1) % 5 == 0:
+                f.write('\n')
         f.write('\n\n')
 
 
-def adjudicate_win(score_history, resign_option, game_index, test_engine_color):
+def adjudicate_win(score_history, resign_option, side):
     logging.info('Try adjudicating this game by win ...')
-    ret, gres, e1score, termi = False, '*', 0.0, ''
+    ret, gres, e1score = False, '*', 0.0
 
     if len(score_history) >= 40:
         fcp_score = score_history[0::2]
@@ -178,48 +208,22 @@ def adjudicate_win(score_history, resign_option, game_index, test_engine_color):
                 swin_cnt += 1
 
         if fwin_cnt >= movecount:
+            gres = '1-0' if side else '0-1'
+            e1score = 1.0
+            logging.info(f'{"White" if side else "Black"} wins by adjudication.')
             ret = True
-            if game_index % 2 == 0:
-                e1score = 1.0
-                if test_engine_color:
-                    gres = '1-0'
-                else:
-                    gres = '0-1'
-            else:
-                e1score = 0.0
-                if test_engine_color:
-                    gres = '0-1'
-                else:
-                    gres = '1-0'
-        elif swin_cnt >= movecount:
+        if swin_cnt >= movecount:
+            gres = '1-0' if side else '0-1'
+            e1score = 0
+            logging.info(f'{"White" if side else "Black"} wins by adjudication.')
             ret = True
-            if game_index % 2 == 0:
-                e1score = 0.0
-                if test_engine_color:
-                    gres = '0-1'
-                else:
-                    gres = '1-0'
-            else:
-                e1score = 1.0
-                if test_engine_color:
-                    gres = '1-0'
-                else:
-                    gres = '0-1'
 
-        if ret:
-            if gres == '1-0':
-                termi = 'White wins by adjudication.'
-            else:
-                termi = 'Black wins by adjudication.'
-
-            logging.info(f'{termi}')
-
-    return ret, gres, e1score, termi
+    return ret, gres, e1score
 
 
 def adjudicate_draw(score_history, draw_option):
     logging.info('Try adjudicating this game by draw ...')
-    ret, gres, e1score, termi = False, '*', 0.0, ''
+    ret, gres, e1score = False, '*', 0.0
 
     if len(score_history) >= draw_option['movenumber'] * 2:
         fcp_score = score_history[0::2]
@@ -242,28 +246,37 @@ def adjudicate_draw(score_history, draw_option):
             e1score = 0.5
             logging.info('Draw by adjudication.')
             ret = True
-            termi = 'Game ends by draw adjudication.'
 
-    return ret, gres, e1score, termi
+    return ret, gres, e1score
 
 
 def is_game_end(line, test_engine_color):
-    game_end, gres, e1score = False, '*', 0.0
+    game_end, gres, e1score, termination, comment = False, '*', 0.0, '', ''
 
     if '1-0' in line:
         game_end = True
         e1score = 1.0 if test_engine_color else 0.0
         gres = '1-0'
+        termination = 'white mates black'
     elif '0-1' in line:
         game_end = True
         e1score = 1.0 if not test_engine_color else 0.0
         gres = '0-1'
+        termination = 'black mates white'
     elif '1/2-1/2' in line:
         game_end = True
         e1score = 0.5
         gres = '1/2-1/2'
+        if 'repetition' in line.lower():
+            termination = 'draw by repetition'
+        elif 'insufficient' in line.lower():
+            termination = 'draw by insufficient mating material'
+        elif 'fifty' in line.lower():
+            termination = 'draw by insufficient mating material'
+        elif 'stalemate' in line.lower():
+            termination = 'draw by stalemate'
 
-    return game_end, gres, e1score
+    return game_end, gres, e1score, termination
 
 
 def param_to_dict(param):
@@ -316,13 +329,14 @@ def time_forfeit(is_timeup, current_color, test_engine_color):
     return game_end, gres, e1score
 
 
-def match(e1, e2, fen, output_game_file, variant, draw_option, resign_option, repeat=2):
+def match(e1, e2, fen, output_game_file, variant, draw_option,
+          resign_option, repeat=2) -> List[float]:
     """
     Run an engine match between e1 and e2. Save the game and print result
     from e1 perspective.
     """
     move_hist = []
-    all_e1score = 0.0
+    all_e1score = []
     is_show_search_info = False
 
     # Start engine match, 2 games will be played.
@@ -368,7 +382,7 @@ def match(e1, e2, fen, output_game_file, variant, draw_option, resign_option, re
                 e.stdin.write(f'option {k}={v}\n')
                 logging.debug(f'{pn} > option {k}={v}')
 
-        timer = []
+        timer, depth_control = [], []
         for i, pr in enumerate(eng):
             e = pr['proc']
             pn = pr['name']
@@ -404,12 +418,13 @@ def match(e1, e2, fen, output_game_file, variant, draw_option, resign_option, re
             # Setup Timer, convert base time to ms and inc in sec to ms
             timer.append(Timer(all_base_sec * 1000, int(incv * 1000)))
 
+            depth_control.append(pr['depth'])
+
             e.stdin.write('force\n')
             logging.debug(f'{pn} > force')
 
-            if not isinstance(fen, int):
-                e.stdin.write(f'setboard {fen}\n')
-                logging.debug(f'{pn} > setboard {fen}')
+            e.stdin.write(f'setboard {fen}\n')
+            logging.debug(f'{pn} > setboard {fen}')
 
             e.stdin.write('ping 2\n')
             logging.debug(f'{pn} > ping 2')
@@ -420,28 +435,26 @@ def match(e1, e2, fen, output_game_file, variant, draw_option, resign_option, re
                     break
 
         num, side, move, line, game_end = 0, 0, None, '', False
-        score_history, elapse_history = [], []
+        score_history, elapse_history, depth_history = [], [], []
         start_turn = turn(fen) if not isinstance(fen, int) else True
         gres, e1score = '*', 0.0
         is_time_over = [False, False]
         current_color = start_turn  # True if white to move
 
-        test_engine_color = False
-        if start_turn and gn % 2 == 0:
-            test_engine_color = True
-        elif not start_turn and gn % 2:
-            test_engine_color = True
-
+        test_engine_color = True if ((start_turn and gn % 2 == 0) or (not start_turn and gn % 2 != 0)) else False
         termination = ''
 
         # Start the game.
         while True:
-            assert timer[side].rem_cs() > 0
-            eng[side]['proc'].stdin.write(f'time {timer[side].rem_cs()}\n')
-            logging.debug(f'{eng[side]["name"]} > time {timer[side].rem_cs()}')
+            if depth_control[side] > 0:
+                eng[side]['proc'].stdin.write(f'sd {depth_control[side]}\n')
+                logging.debug(f'{eng[side]["name"]} > sd {depth_control[side]}')
+            else:
+                eng[side]['proc'].stdin.write(f'time {timer[side].rem_cs()}\n')
+                logging.debug(f'{eng[side]["name"]} > time {timer[side].rem_cs()}')
 
-            eng[side]['proc'].stdin.write(f'otim {timer[not side].rem_cs()}\n')
-            logging.debug(f'{eng[side]["name"]} > otim {timer[not side].rem_cs()}')
+                eng[side]['proc'].stdin.write(f'otim {timer[not side].rem_cs()}\n')
+                logging.debug(f'{eng[side]["name"]} > otim {timer[not side].rem_cs()}')
 
             t1 = time.perf_counter_ns()
 
@@ -459,7 +472,7 @@ def match(e1, e2, fen, output_game_file, variant, draw_option, resign_option, re
                     logging.debug(f'{eng[side]["name"]} > go')
 
             num += 1
-            score = None
+            score, depth = None, None
 
             for eline in iter(eng[side]['proc'].stdout.readline, ''):
                 line = eline.strip()
@@ -470,14 +483,15 @@ def match(e1, e2, fen, output_game_file, variant, draw_option, resign_option, re
                     if not line.startswith('#'):
                         print(line)
 
-                # Save score from engine search info.
+                # Save score and depth from engine search info.
                 if line.split()[0].isdigit():
                     score = int(line.split()[1])  # cp
+                    depth = int(line.split()[0])
 
                 # Check end of game as claimed by engines.
-                game_endr, gresr, e1scorer = is_game_end(line, test_engine_color)
+                game_endr, gresr, e1scorer, termi = is_game_end(line, test_engine_color)
                 if game_endr:
-                    game_end, gres, e1score = game_endr, gresr, e1scorer
+                    game_end, gres, e1score, termination = game_endr, gresr, e1scorer, termi
                     break
 
                 if 'move ' in line and not line.startswith('#'):
@@ -487,6 +501,7 @@ def match(e1, e2, fen, output_game_file, variant, draw_option, resign_option, re
 
                     move = line.split('move ')[1]
                     score_history.append(score if score is not None else 0)
+                    depth_history.append(depth if depth is not None else 0)
 
                     if timer[side].is_zero_time():
                         is_time_over[current_color] = True
@@ -502,48 +517,52 @@ def match(e1, e2, fen, output_game_file, variant, draw_option, resign_option, re
             # Resign
             if (resign_option['movecount'] is not None
                     and resign_option['score'] is not None):
-                game_endr, gresr, e1scorer, termi = adjudicate_win(
-                    score_history, resign_option, gn, test_engine_color)
+                game_endr, gresr, e1scorer = adjudicate_win(
+                    score_history, resign_option, side)
 
                 if game_endr:
-                    gres, e1score, termination = gresr, e1scorer, termi
+                    gres, e1score = gresr, e1scorer
+                    logging.info('Game ends by resign adjudication.')
                     break
 
             # Draw
             if (draw_option['movenumber'] is not None
                     and draw_option['movenumber'] is not None
                     and draw_option['score'] is not None):
-                game_endr, gresr, e1scorer, termi = adjudicate_draw(
+                game_endr, gresr, e1scorer = adjudicate_draw(
                     score_history, draw_option)
                 if game_endr:
-                    gres, e1score, termination = gresr, e1scorer, termi
+                    gres, e1score = gresr, e1scorer
+                    logging.info('Game ends by resign adjudication.')
                     break
 
             # Time is over
-            game_endr, gresr, e1scorer = time_forfeit(
-                is_time_over[current_color], current_color, test_engine_color)
-            if game_endr:
-                gres, e1score = gresr, e1scorer
-                break
+            if depth_control[side] == 0:
+                game_endr, gresr, e1scorer = time_forfeit(
+                    is_time_over[current_color], current_color, test_engine_color)
+                if game_endr:
+                    gres, e1score = gresr, e1scorer
+                    break
 
             side = not side
             current_color = not current_color
 
         if output_game_file is not None:
-            save_game(output_game_file, fen, move_hist, eng[0]["name"],
-                      eng[1]["name"], start_turn, gres, termination)
+            save_game(output_game_file, fen, move_hist, score_history,
+                      depth_history, eng[0]["name"], eng[1]["name"],
+                      start_turn, gres, termination, variant)
 
         for i, e in enumerate(eng):
             e['proc'].stdin.write('quit\n')
             logging.debug(f'{e["name"]} > quit')
 
-        all_e1score += e1score
+        all_e1score.append(e1score)
 
-    return all_e1score/repeat
+    return all_e1score
 
 
-def round_match(fen, e1, e2, output_game_file, repeat,
-                draw_option, resign_option, variant, posround=1):
+def round_match(fen, e1, e2, output_game_file, repeat, draw_option,
+                resign_option, variant, posround=1) -> List[float]:
     """
     Play a match between e1 and e2 using fen as starting position. By default
     2 games will be played color is reversed. If posround is more than 1, the
@@ -564,8 +583,8 @@ def main():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('-rounds', required=False,
-                        help='Total games to play, default=1\n',
-                        type=int, default=1)
+                        help='Number of encounter. Can be number of games if repeat is 2, default=2\n',
+                        type=int, default=2)
     parser.add_argument('-repeat', required=False,
                         help='Number of times to play a certain opening\n'
                              'default is 2 so that the position will be\n'
@@ -576,7 +595,8 @@ def main():
                         metavar=('cmd=', 'name='),
                         help='This option is used to define the engines.\n'
                         'Example:\n'
-                        '-engine cmd=engine1.exe name=test ... --engine cmd=engine2.exe name=base')
+                        '-engine cmd=engine1.exe name=test ...'
+                             ' --engine cmd=engine2.exe name=base')
     parser.add_argument('-draw', nargs='*', action='append', required=False,
                         metavar=('movenumber=', 'movecount='),
                         help='Adjudicates game to a draw result. Example:\n'
@@ -585,7 +605,8 @@ def main():
                         metavar=('movecount=', 'score='),
                         help='Adjudicates game to a loss result. Example:\n'
                              '-resign movecount=10 score=900')
-    parser.add_argument('-pgnout', required=False, metavar='pgn_output_filename',
+    parser.add_argument('-pgnout', required=False,
+                        metavar='pgn_output_filename',
                         help='pgn output filename')
     parser.add_argument('-concurrency', required=False,
                         help='number of game to run in parallel, default=1',
@@ -596,12 +617,14 @@ def main():
                         help='This option is used to apply to both engnes.\n'
                              'Example where tc is applied to each engine:\n'
                              '-each tc=1+0.1')
-    parser.add_argument('-openings', nargs='*', action='append', required=False,
+    parser.add_argument('-openings', nargs='*', action='append',
+                        required=False,
                         metavar=('file=', 'format='),
                         help='Define start openings. Example:\n'
                              '-openings file=start.fen format=epd')
     parser.add_argument('-tournament', required=False, default='round-robin',
-                        metavar='tour_type', help='tournament type, default=round-robin')
+                        metavar='tour_type',
+                        help='tournament type, default=round-robin')
 
     args = parser.parse_args()
 
@@ -614,13 +637,14 @@ def main():
         return
 
     each_engine_option = {}
-    for opt in args.each:
-        for value in opt:
-            key = value.split('=')[0]
-            val = value.split('=')[1].strip()
-            each_engine_option.update({key: val})
+    if args.each is not None:
+        for opt in args.each:
+            for value in opt:
+                key = value.split('=')[0]
+                val = value.split('=')[1].strip()
+                each_engine_option.update({key: val})
 
-    # Exit if tc or time control is not defined.
+    # Update tc of e1/e2 from each.
     if e1['tc'] == '' or e2['tc'] == '':
         if 'tc' in each_engine_option:
             for key, val in each_engine_option.items():
@@ -628,9 +652,20 @@ def main():
                     e1.update({key: val})
                     e2.update({key: val})
                     break
-        else:
-            print('Error, tc or time control is not properly defined!')
-            return
+
+    # Update depth of e1/e2 from each.
+    if e1['depth'] == 0 or e2['depth'] == 0:
+        if 'depth' in each_engine_option:
+            for key, val in each_engine_option.items():
+                if key == 'depth':
+                    e1.update({key: int(val)})
+                    e2.update({key: int(val)})
+                    break
+
+    # Exit if there are no tc or depth.
+    if e1['tc'] == '' or e2['tc'] == '':
+        if e1['depth'] == 0 or e2['depth'] == 0:
+            raise Exception('Error! tc or depth are not defined.')
 
     # Start opening file
     fen_file = None
@@ -664,7 +699,6 @@ def main():
     # Start match
     joblist = []
     test_engine_score_list = []
-    match_done = 0
     total_games = max(1, args.rounds // args.repeat)
 
     # Use Python 3.8 or higher
@@ -674,19 +708,23 @@ def main():
                 break
             job = executor.submit(round_match, fen, e1, e2,
                                   output_game_file, args.repeat,
-                                  draw_option, resign_option, args.variant, posround)
+                                  draw_option, resign_option, args.variant,
+                                  posround)
             joblist.append(job)
 
         for future in concurrent.futures.as_completed(joblist):
             try:
                 test_engine_score = future.result()[0]
-                test_engine_score_list.append(test_engine_score)
-                match_done += 1
+                for s in test_engine_score:
+                    test_engine_score_list.append(s)
+                perf = mean(test_engine_score_list)
+                games = len(test_engine_score_list)
+                print(f'Score of {e1["name"]} vs {e2["name"]}: [{perf}] {games}')
             except concurrent.futures.process.BrokenProcessPool as ex:
                 print(f'exception: {ex}')
 
     logging.info(f'final test score: {mean(test_engine_score_list)}')
-    print(f'Score of {e1["name"]} vs {e2["name"]}: [{mean(test_engine_score_list)}]')
+    print('Finished match')
 
 
 if __name__ == '__main__':
